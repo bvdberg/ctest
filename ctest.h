@@ -51,26 +51,20 @@ extern char* ctest_errormsg;
 #define CTEST_TEARDOWN(sname) \
     void __attribute__ ((weak)) sname##_teardown(struct sname##_data* data)
 
-#define CTEST(sname, tname) \
+#define CTEST_INT(sname, tname, _skip) \
     void FNAME(sname, tname)(); \
     struct ctest TNAME(sname, tname) Test_Section = { \
         .ssname=#sname, \
         .ttname=#tname, \
         .run = FNAME(sname, tname), \
+        .skip = _skip, \
         .magic = CTEST_MAGIC }; \
     void FNAME(sname, tname)()
 
-#define CTEST_SKIP(sname, tname) \
-    void FNAME(sname, tname)(); \
-    struct ctest TNAME(sname, tname) Test_Section = { \
-        .ssname=#sname, \
-        .ttname=#tname, \
-        .run = FNAME(sname, tname), \
-        .skip = 1, \
-        .magic = CTEST_MAGIC }; \
-    void FNAME(sname, tname)()
+#define CTEST(sname, tname) CTEST_INT(sname, tname, 0)
+#define CTEST_SKIP(sname, tname) CTEST_INT(sname, tname, 1)
 
-#define CTEST2(sname, tname) \
+#define CTEST2_INT(sname, tname, _skip) \
     static struct sname##_data  __ctest_##sname##_data; \
     CTEST_SETUP(sname); \
     CTEST_TEARDOWN(sname); \
@@ -79,27 +73,15 @@ extern char* ctest_errormsg;
         .ssname=#sname, \
         .ttname=#tname, \
         .run = FNAME(sname, tname), \
+        .skip = _skip, \
         .data = &__ctest_##sname##_data, \
         .setup = (SetupFunc)sname##_setup, \
         .teardown = (TearDownFunc)sname##_teardown, \
         .magic = CTEST_MAGIC }; \
     void FNAME(sname, tname)(struct sname##_data* data)
 
-#define CTEST2_SKIP(sname, tname) \
-    static struct sname##_data  __ctest_##sname##_data; \
-    CTEST_SETUP(sname); \
-    CTEST_TEARDOWN(sname); \
-    void FNAME(sname, tname)(struct sname##_data* data); \
-    struct ctest TNAME(sname, tname) Test_Section = { \
-        .ssname=#sname, \
-        .ttname=#tname, \
-        .run = FNAME(sname, tname), \
-        .skip = 1, \
-        .data = &__ctest_##sname##_data, \
-        .setup = (SetupFunc)sname##_setup, \
-        .teardown = (TearDownFunc)sname##_teardown, \
-        .magic = CTEST_MAGIC }; \
-    void FNAME(sname, tname)(struct sname##_data* data)
+#define CTEST2(sname, tname) CTEST2_INT(sname, tname, 0)
+#define CTEST2_SKIP(sname, tname) CTEST2_INT(sname, tname, 1)
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
