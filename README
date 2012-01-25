@@ -1,0 +1,28 @@
+ctest is a unit test framework for software written in C.
+It features:
+- adding tests with minimal hassle
+- supports suites of tests
+- supports setup()  teardown() per test
+- output format not messed up when tests fail, so easy to parse.
+- displays elapsed time, so you can keep your tests fast
+- uses coloring for easy error recognition
+
+example test:
+CTEST(suite, test1) {
+    ASSERT_STR("foo", "foo");
+}
+
+CTEST(suite, test2) {
+    ASSERT_EQUAL(1, 2);
+}
+
+NO further typing is needed! ctest does the rest.
+
+example output when running ctest:
+$ ./test
+TEST 1/2 suite1:test1 [OK]
+TEST 2/2 suite1:test2 [FAIL]
+  ERR: mytests.c:4  expected 1, got 2
+RESULTS: 2 tests,  1 ok, 1 failed
+Elapsed time: 1 ms
+
