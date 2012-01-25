@@ -37,6 +37,9 @@ CTEST2(memtest, test1) {
     CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
 }
 
+CTEST2_SKIP(memtest, test3) {
+    ASSERT_FAIL();
+}
 
 CTEST2(memtest, test2) {
     CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
@@ -105,6 +108,10 @@ CTEST(ctest, test_assert_true) {
 CTEST(ctest, test_assert_false) {
     ASSERT_FALSE(0);
     ASSERT_FALSE(1);
+}
+
+CTEST_SKIP(ctest, test_skip) {
+    ASSERT_FAIL();
 }
 
 CTEST(ctest, test_assert_fail) {

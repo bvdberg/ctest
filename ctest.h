@@ -30,6 +30,7 @@ struct ctest {
     const char* ssname;  // suite name
     const char* ttname;  // test name
     void (*run)();
+    int skip;
 
     void* data;
     SetupFunc setup;
@@ -59,6 +60,16 @@ extern char* ctest_errormsg;
         .magic = CTEST_MAGIC }; \
     void FNAME(sname, tname)()
 
+#define CTEST_SKIP(sname, tname) \
+    void FNAME(sname, tname)(); \
+    struct ctest TNAME(sname, tname) Test_Section = { \
+        .ssname=#sname, \
+        .ttname=#tname, \
+        .run = FNAME(sname, tname), \
+        .skip = 1, \
+        .magic = CTEST_MAGIC }; \
+    void FNAME(sname, tname)()
+
 #define CTEST2(sname, tname) \
     static struct sname##_data  __ctest_##sname##_data; \
     CTEST_SETUP(sname); \
@@ -68,6 +79,22 @@ extern char* ctest_errormsg;
         .ssname=#sname, \
         .ttname=#tname, \
         .run = FNAME(sname, tname), \
+        .data = &__ctest_##sname##_data, \
+        .setup = (SetupFunc)sname##_setup, \
+        .teardown = (TearDownFunc)sname##_teardown, \
+        .magic = CTEST_MAGIC }; \
+    void FNAME(sname, tname)(struct sname##_data* data)
+
+#define CTEST2_SKIP(sname, tname) \
+    static struct sname##_data  __ctest_##sname##_data; \
+    CTEST_SETUP(sname); \
+    CTEST_TEARDOWN(sname); \
+    void FNAME(sname, tname)(struct sname##_data* data); \
+    struct ctest TNAME(sname, tname) Test_Section = { \
+        .ssname=#sname, \
+        .ttname=#tname, \
+        .run = FNAME(sname, tname), \
+        .skip = 1, \
         .data = &__ctest_##sname##_data, \
         .setup = (SetupFunc)sname##_setup, \
         .teardown = (TearDownFunc)sname##_teardown, \
@@ -249,6 +276,7 @@ int main(int argc, const char *argv[])
     volatile int total = 0;
     volatile int num_ok = 0;
     volatile int num_fail = 0;
+    volatile int num_skip = 0;
     volatile int index = 1;
     volatile filter_func filter = no_filter;
 
@@ -288,31 +316,36 @@ int main(int argc, const char *argv[])
             ctest_errormsg = ctest_errorbuffer;
             printf("TEST %d/%d %s:%s ", index, total, test->ssname, test->ttname);
             fflush(stdout);
-            if (test->setup) test->setup(test->data);
-            int result = setjmp(ctest_err);
-            if (result == 0) {
-                if (test->data) {
-                    runfunc2 f2 = (runfunc2)test->run;
-                    f2(test->data);
-                } else {
-                    test->run();
-                }
-                // if we got here it's ok
-                printf("[OK]\n");
-                num_ok++;
+            if (test->skip) {
+                printf(ANSI_BYELLOW"[SKIPPED]"ANSI_NORMAL"\n");
+                num_skip++;
             } else {
-                printf(ANSI_BRED"[FAIL]"ANSI_NORMAL"\n");
-                num_fail++;
+                if (test->setup) test->setup(test->data);
+                int result = setjmp(ctest_err);
+                if (result == 0) {
+                    if (test->data) {
+                        runfunc2 f2 = (runfunc2)test->run;
+                        f2(test->data);
+                    } else {
+                        test->run();
+                    }
+                    // if we got here it's ok
+                    printf("[OK]\n");
+                    num_ok++;
+                } else {
+                    printf(ANSI_BRED"[FAIL]"ANSI_NORMAL"\n");
+                    num_fail++;
+                }
+                if (test->teardown) test->teardown(test->data);
+                if (ctest_errorsize != MSG_SIZE-1) printf("%s", ctest_errorbuffer);
             }
-            if (test->teardown) test->teardown(test->data);
-            if (ctest_errorsize != MSG_SIZE-1) printf("%s", ctest_errorbuffer);
             index++;
         }
     }
     u_int64_t t2 = getCurrentTime();
 
     const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
-    printf("%sRESULTS: %d tests,  %d ok, %d failed"ANSI_NORMAL"\n", color, total, num_ok, num_fail);
+    printf("%sRESULTS: %d tests,  %d ok, %d failed, %d skipped"ANSI_NORMAL"\n", color, total, num_ok, num_fail, num_skip);
     printf("Elapsed time: %lld ms\n", (t2 - t1) / 1000);
     return num_fail;
 }
