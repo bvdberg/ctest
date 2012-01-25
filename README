@@ -26,3 +26,33 @@ TEST 2/2 suite1:test2 [FAIL]
 RESULTS: 2 tests,  1 ok, 1 failed
 Elapsed time: 1 ms
 
+There can be one argument to: ./test <suite>.
+for example: 
+$ ./test timer
+will run all tests from suites starting with 'timer'
+
+
+A testcase with a setup()/teardown() is described below. An unsigned
+char buffer is malloced before each test in the suite and freed afterwards.
+
+struct mytest_data {
+    unsigned char* buffer;
+};
+
+NOTE: the mytest_data struct is available in setup/teardown/run functions as 'data'
+CTEST_SETUP(mytest) {
+    data->buffer = (unsigned char*)malloc(1024);
+}
+
+CTEST_TEARDOWN(mytest) {
+    free(data->buffer);
+}
+
+
+NOTE: setup will be called before this test (and ony other test in the same suite)
+NOTE: CTEST_LOG() can be used to log warnings consistent with the normal output format
+CTEST2(mytest, test1) {
+    CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
+}
+NOTE: teardown will be called after the test completes
+
