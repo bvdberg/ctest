@@ -42,8 +42,19 @@ struct ctest {
 extern int ctest_errorsize;
 extern char* ctest_errormsg;
 
-#define FNAME(sname, tname) __ctest_##sname##_##tname##_run
-#define TNAME(sname, tname) __ctest_##sname##_##tname
+#define __FNAME(sname, tname) __ctest_##sname##_##tname##_run
+#define __TNAME(sname, tname) __ctest_##sname##_##tname
+
+#define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
+    struct ctest __TNAME(sname, tname) Test_Section = { \
+        .ssname=#sname, \
+        .ttname=#tname, \
+        .run = __FNAME(sname, tname), \
+        .skip = _skip, \
+        .data = __data, \
+        .setup = (SetupFunc)__setup, \
+        .teardown = (TearDownFunc)__teardown, \
+        .magic = CTEST_MAGIC };
 
 #define CTEST_SETUP(sname) \
     void __attribute__ ((weak)) sname##_setup(struct sname##_data* data)
@@ -51,37 +62,24 @@ extern char* ctest_errormsg;
 #define CTEST_TEARDOWN(sname) \
     void __attribute__ ((weak)) sname##_teardown(struct sname##_data* data)
 
-#define CTEST_INT(sname, tname, _skip) \
-    void FNAME(sname, tname)(); \
-    struct ctest TNAME(sname, tname) Test_Section = { \
-        .ssname=#sname, \
-        .ttname=#tname, \
-        .run = FNAME(sname, tname), \
-        .skip = _skip, \
-        .magic = CTEST_MAGIC }; \
-    void FNAME(sname, tname)()
+#define __CTEST_INT(sname, tname, _skip) \
+    void __FNAME(sname, tname)(); \
+    __CTEST_STRUCT(sname, tname, _skip, 0, 0, 0) \
+    void __FNAME(sname, tname)()
 
-#define CTEST(sname, tname) CTEST_INT(sname, tname, 0)
-#define CTEST_SKIP(sname, tname) CTEST_INT(sname, tname, 1)
+#define CTEST(sname, tname) __CTEST_INT(sname, tname, 0)
+#define CTEST_SKIP(sname, tname) __CTEST_INT(sname, tname, 1)
 
-#define CTEST2_INT(sname, tname, _skip) \
+#define __CTEST2_INT(sname, tname, _skip) \
     static struct sname##_data  __ctest_##sname##_data; \
     CTEST_SETUP(sname); \
     CTEST_TEARDOWN(sname); \
-    void FNAME(sname, tname)(struct sname##_data* data); \
-    struct ctest TNAME(sname, tname) Test_Section = { \
-        .ssname=#sname, \
-        .ttname=#tname, \
-        .run = FNAME(sname, tname), \
-        .skip = _skip, \
-        .data = &__ctest_##sname##_data, \
-        .setup = (SetupFunc)sname##_setup, \
-        .teardown = (TearDownFunc)sname##_teardown, \
-        .magic = CTEST_MAGIC }; \
-    void FNAME(sname, tname)(struct sname##_data* data)
+    void __FNAME(sname, tname)(struct sname##_data* data); \
+    __CTEST_STRUCT(sname, tname, _skip, &__ctest_##sname##_data, sname##_setup, sname##_teardown) \
+    void __FNAME(sname, tname)(struct sname##_data* data)
 
-#define CTEST2(sname, tname) CTEST2_INT(sname, tname, 0)
-#define CTEST2_SKIP(sname, tname) CTEST2_INT(sname, tname, 1)
+#define CTEST2(sname, tname) __CTEST2_INT(sname, tname, 0)
+#define CTEST2_SKIP(sname, tname) __CTEST2_INT(sname, tname, 1)
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
@@ -269,8 +267,8 @@ int main(int argc, const char *argv[])
 
     u_int64_t t1 = getCurrentTime();
 
-    struct ctest* ctest_begin = &TNAME(suite, test);
-    struct ctest* ctest_end = &TNAME(suite, test);
+    struct ctest* ctest_begin = &__TNAME(suite, test);
+    struct ctest* ctest_end = &__TNAME(suite, test);
     // find begin and end of section by comparing magics
     while (1) {
         struct ctest* t = ctest_begin-1;
