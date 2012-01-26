@@ -6,6 +6,7 @@ FEATURES:
 - output format not messed up when tests fail, so easy to parse.
 - displays elapsed time, so you can keep your tests fast
 - uses coloring for easy error recognition
+- only use coloring if output goes to terminal (not file/process)
 - it's small (a little over 300 lines of code!)
 - it's easy to integrate (only 1 header file)
 - has SKIP option to skip certain test (no commenting test out anymore)
