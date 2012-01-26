@@ -112,16 +112,18 @@ void assert_fail(const char* caller, int line);
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
 
-int ctest_errorsize;
-char* ctest_errormsg;
+static int ctest_errorsize;
+static char* ctest_errormsg;
 #define MSG_SIZE 4096
 static char ctest_errorbuffer[MSG_SIZE];
 static jmp_buf ctest_err;
+static int color_output = 1;
+static const char* suite_name = 0;
 
 typedef int (*runfunc2)(void*);
-
-static CTEST(suite, test) { }
+typedef int (*filter_func)(struct ctest*);
 
 #define ANSI_BLACK "\033[0;30m"
 #define ANSI_RED "\033[0;31m"
@@ -141,42 +143,58 @@ static CTEST(suite, test) { }
 #define ANSI_WHITE "\033[01;37m"
 #define ANSI_NORMAL "\033[0m"
 
-typedef int (*filter_func)(struct ctest*);
+static CTEST(suite, test) { }
 
-static const char* suite_name = 0;
+static void msg_start(const char* color, const char* title) {
+    int size;
+    if (color_output) {
+        size = snprintf(ctest_errormsg, ctest_errorsize, "%s", color);
+        ctest_errorsize -= size;
+        ctest_errormsg += size;
+    }
+    size = snprintf(ctest_errormsg, ctest_errorsize, "  %s: ", title);
+    ctest_errorsize -= size;
+    ctest_errormsg += size;
+}
+
+static void msg_end() {
+    int size;
+    if (color_output) {
+        size = snprintf(ctest_errormsg, ctest_errorsize, ANSI_NORMAL);
+        ctest_errorsize -= size;
+        ctest_errormsg += size;
+    }
+    size = snprintf(ctest_errormsg, ctest_errorsize, "\n");
+    ctest_errorsize -= size;
+    ctest_errormsg += size;
+}
 
 void CTEST_LOG(char *fmt, ...)
 {
     va_list argp;
-    int size = 0;
-    size = snprintf(ctest_errormsg, ctest_errorsize, "  "ANSI_BLUE"LOG: ");
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+    msg_start(ANSI_BLUE, "LOG");
+
     va_start(argp, fmt);
-    size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
+    int size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
     ctest_errorsize -= size;
     ctest_errormsg += size;
     va_end(argp);
-    size = snprintf(ctest_errormsg, ctest_errorsize, ANSI_NORMAL"\n");
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+
+    msg_end();
 }
 
 void CTEST_ERR(char *fmt, ...)
 {
     va_list argp;
-    int size = 0;
-    size = snprintf(ctest_errormsg, ctest_errorsize, "  "ANSI_YELLOW"ERR: ");
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+    msg_start(ANSI_YELLOW, "ERR");
+
     va_start(argp, fmt);
-    size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
+    int size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
     ctest_errorsize -= size;
     ctest_errormsg += size;
     va_end(argp);
-    size = snprintf(ctest_errormsg, ctest_errorsize, ANSI_NORMAL"\n");
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+
+    msg_end();
 }
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line) {
@@ -251,6 +269,13 @@ static u_int64_t getCurrentTime() {
     return now64;
 }
 
+static void color_print(const char* color, const char* text) {
+    if (color_output)
+        printf("%s%s"ANSI_NORMAL"\n", color, text);
+    else
+        printf("%s\n", text);
+}
+
 int main(int argc, const char *argv[])
 {
     static int total = 0;
@@ -265,6 +290,7 @@ int main(int argc, const char *argv[])
         filter = suite_filter;
     }
 
+    color_output = isatty(1);
     u_int64_t t1 = getCurrentTime();
 
     struct ctest* ctest_begin = &__TNAME(suite, test);
@@ -297,7 +323,7 @@ int main(int argc, const char *argv[])
             printf("TEST %d/%d %s:%s ", index, total, test->ssname, test->ttname);
             fflush(stdout);
             if (test->skip) {
-                printf(ANSI_BYELLOW"[SKIPPED]"ANSI_NORMAL"\n");
+                color_print(ANSI_BYELLOW, "[SKIPPED]");
                 num_skip++;
             } else {
                 if (test->setup) test->setup(test->data);
@@ -313,7 +339,7 @@ int main(int argc, const char *argv[])
                     printf("[OK]\n");
                     num_ok++;
                 } else {
-                    printf(ANSI_BRED"[FAIL]"ANSI_NORMAL"\n");
+                    color_print(ANSI_BRED, "[FAIL]");
                     num_fail++;
                 }
                 if (test->teardown) test->teardown(test->data);
