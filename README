@@ -29,13 +29,14 @@ $ ./test
 TEST 1/2 suite1:test1 [OK]
 TEST 2/2 suite1:test2 [FAIL]
   ERR: mytests.c:4  expected 1, got 2
-RESULTS: 2 tests,  1 ok, 1 failed, 0 skipped
-Elapsed time: 1 ms
+RESULTS: 2 tests (1 ok, 1 failed, 0 skipped) ran in 1 ms
 
 There can be one argument to: ./test <suite>.
 for example: 
 $ ./test timer
 will run all tests from suites starting with 'timer'
+
+NOTE: when piping output to a file/process, ctest will not color the output
 
 ----------------------------------------------------------------------------
 Fixtures:
