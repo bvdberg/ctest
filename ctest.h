@@ -59,7 +59,7 @@ struct ctest {
 
 #define __CTEST_INTERNAL(sname, tname, _skip) \
     void __FNAME(sname, tname)(); \
-    __CTEST_STRUCT(sname, tname, _skip, 0, 0, 0) \
+    __CTEST_STRUCT(sname, tname, _skip, NULL, NULL, NULL) \
     void __FNAME(sname, tname)()
 
 #define __CTEST2_INTERNAL(sname, tname, _skip) \
@@ -114,13 +114,13 @@ void assert_fail(const char* caller, int line);
 #include <sys/time.h>
 #include <unistd.h>
 
-static int ctest_errorsize;
+static size_t ctest_errorsize;
 static char* ctest_errormsg;
 #define MSG_SIZE 4096
 static char ctest_errorbuffer[MSG_SIZE];
 static jmp_buf ctest_err;
 static int color_output = 1;
-static const char* suite_name = 0;
+static const char* suite_name;
 
 typedef int (*runfunc2)(void*);
 typedef int (*filter_func)(struct ctest*);
@@ -326,15 +326,16 @@ int main(int argc, const char *argv[])
                 color_print(ANSI_BYELLOW, "[SKIPPED]");
                 num_skip++;
             } else {
-                if (test->setup) test->setup(test->data);
                 int result = setjmp(ctest_err);
                 if (result == 0) {
+                    if (test->setup) test->setup(test->data);
                     if (test->data) {
                         runfunc2 f2 = (runfunc2)test->run;
                         f2(test->data);
                     } else {
                         test->run();
                     }
+                    if (test->teardown) test->teardown(test->data);
                     // if we got here it's ok
                     printf("[OK]\n");
                     num_ok++;
@@ -342,7 +343,6 @@ int main(int argc, const char *argv[])
                     color_print(ANSI_BRED, "[FAIL]");
                     num_fail++;
                 }
-                if (test->teardown) test->teardown(test->data);
                 if (ctest_errorsize != MSG_SIZE-1) printf("%s", ctest_errorbuffer);
             }
             index++;
