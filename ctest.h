@@ -89,7 +89,7 @@ void assert_not_equal(int exp, int real, const char* caller, int line);
 #define ASSERT_NOT_EQUAL(exp, real) assert_not_equal(exp, real, __FILE__, __LINE__)
 
 void assert_null(void* real, const char* caller, int line);
-#define ASSERT_NULL(real) assert_null(real, __FILE__, __LINE__)
+#define ASSERT_NULL(real) assert_null((void*)real, __FILE__, __LINE__)
 
 void assert_not_null(void* real, const char* caller, int line);
 #define ASSERT_NOT_NULL(real) assert_not_null(real, __FILE__, __LINE__)
