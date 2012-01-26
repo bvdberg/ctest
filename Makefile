@@ -1,4 +1,4 @@
-CCFLAGS=-Wall -Wextra -Wno-unused-parameter -O2
+CCFLAGS=-Wall -Wextra -Wno-unused-parameter -O3
 
 all: test
 

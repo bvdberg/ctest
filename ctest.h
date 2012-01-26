@@ -141,7 +141,7 @@ CTEST(suite, test) { }
 #define ANSI_WHITE "\033[01;37m"
 #define ANSI_NORMAL "\033[0m"
 
-typedef int (*filter_func)(struct ctest*);
+typedef int (*filter_func)(volatile struct ctest*);
 
 static const char* suite_name = 0;
 
@@ -234,11 +234,11 @@ void assert_fail(const char* caller, int line) {
 }
 
 
-static int no_filter(struct ctest* t) { 
+static int no_filter(volatile struct ctest* t) {
     return 1;
 }
 
-static int suite_filter(struct ctest* t) { 
+static int suite_filter(volatile struct ctest* t) { 
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
@@ -253,12 +253,12 @@ static u_int64_t getCurrentTime() {
 
 int main(int argc, const char *argv[])
 {
-    volatile int total = 0;
-    volatile int num_ok = 0;
-    volatile int num_fail = 0;
-    volatile int num_skip = 0;
-    volatile int index = 1;
-    volatile filter_func filter = no_filter;
+    static int total = 0;
+    static int num_ok = 0;
+    static int num_fail = 0;
+    static int num_skip = 0;
+    static int index = 1;
+    static filter_func filter = no_filter;
 
     if (argc == 2) {
         suite_name = argv[1];
@@ -282,7 +282,7 @@ int main(int argc, const char *argv[])
     }
     ctest_end++;    // end after last one
 
-    struct ctest* test;    
+    static struct ctest* test;
     for (test = ctest_begin; test != ctest_end; test++) {
         if (test == &__ctest_suite_test) continue;
         if (filter(test)) total++;
