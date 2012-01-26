@@ -16,11 +16,6 @@
 #ifndef CTEST_H
 #define CTEST_H
 
-#define CTEST_MAGIC (0xdeadbeef)
-#define Test_Section __attribute__ ((unused,section (".ctest")))
-
-void CTEST_LOG(char *fmt, ...);
-
 typedef void (*SetupFunc)(void*);
 typedef void (*TearDownFunc)(void*);
 
@@ -37,14 +32,14 @@ struct ctest {
     unsigned int magic;
 };
 
-extern int ctest_errorsize;
-extern char* ctest_errormsg;
-
 #define __FNAME(sname, tname) __ctest_##sname##_##tname##_run
 #define __TNAME(sname, tname) __ctest_##sname##_##tname
 
+#define __CTEST_MAGIC (0xdeadbeef)
+#define __Test_Section __attribute__ ((unused,section (".ctest")))
+
 #define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
-    struct ctest __TNAME(sname, tname) Test_Section = { \
+    struct ctest __TNAME(sname, tname) __Test_Section = { \
         .ssname=#sname, \
         .ttname=#tname, \
         .run = __FNAME(sname, tname), \
@@ -52,7 +47,7 @@ extern char* ctest_errormsg;
         .data = __data, \
         .setup = (SetupFunc)__setup, \
         .teardown = (TearDownFunc)__teardown, \
-        .magic = CTEST_MAGIC };
+        .magic = __CTEST_MAGIC };
 
 #define CTEST_DATA(sname) struct sname##_data
 
@@ -62,15 +57,12 @@ extern char* ctest_errormsg;
 #define CTEST_TEARDOWN(sname) \
     void __attribute__ ((weak)) sname##_teardown(struct sname##_data* data)
 
-#define __CTEST_INT(sname, tname, _skip) \
+#define __CTEST_INTERNAL(sname, tname, _skip) \
     void __FNAME(sname, tname)(); \
     __CTEST_STRUCT(sname, tname, _skip, 0, 0, 0) \
     void __FNAME(sname, tname)()
 
-#define CTEST(sname, tname) __CTEST_INT(sname, tname, 0)
-#define CTEST_SKIP(sname, tname) __CTEST_INT(sname, tname, 1)
-
-#define __CTEST2_INT(sname, tname, _skip) \
+#define __CTEST2_INTERNAL(sname, tname, _skip) \
     static struct sname##_data  __ctest_##sname##_data; \
     CTEST_SETUP(sname); \
     CTEST_TEARDOWN(sname); \
@@ -78,8 +70,14 @@ extern char* ctest_errormsg;
     __CTEST_STRUCT(sname, tname, _skip, &__ctest_##sname##_data, sname##_setup, sname##_teardown) \
     void __FNAME(sname, tname)(struct sname##_data* data)
 
-#define CTEST2(sname, tname) __CTEST2_INT(sname, tname, 0)
-#define CTEST2_SKIP(sname, tname) __CTEST2_INT(sname, tname, 1)
+
+void CTEST_LOG(char *fmt, ...);
+
+#define CTEST(sname, tname) __CTEST_INTERNAL(sname, tname, 0)
+#define CTEST_SKIP(sname, tname) __CTEST_INTERNAL(sname, tname, 1)
+
+#define CTEST2(sname, tname) __CTEST2_INTERNAL(sname, tname, 0)
+#define CTEST2_SKIP(sname, tname) __CTEST2_INTERNAL(sname, tname, 1)
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
@@ -273,12 +271,12 @@ int main(int argc, const char *argv[])
     // find begin and end of section by comparing magics
     while (1) {
         struct ctest* t = ctest_begin-1;
-        if (t->magic != CTEST_MAGIC) break;
+        if (t->magic != __CTEST_MAGIC) break;
         ctest_begin--;
     }
     while (1) {
         struct ctest* t = ctest_end+1;
-        if (t->magic != CTEST_MAGIC) break;
+        if (t->magic != __CTEST_MAGIC) break;
         ctest_end++;
     }
     ctest_end++;    // end after last one
