@@ -141,7 +141,7 @@ CTEST(suite, test) { }
 #define ANSI_WHITE "\033[01;37m"
 #define ANSI_NORMAL "\033[0m"
 
-typedef int (*filter_func)(volatile struct ctest*);
+typedef int (*filter_func)(struct ctest*);
 
 static const char* suite_name = 0;
 
@@ -234,11 +234,11 @@ void assert_fail(const char* caller, int line) {
 }
 
 
-static int no_filter(volatile struct ctest* t) {
+static int no_filter(struct ctest* t) {
     return 1;
 }
 
-static int suite_filter(volatile struct ctest* t) { 
+static int suite_filter(struct ctest* t) { 
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
