@@ -111,7 +111,7 @@ void assert_fail(const char* caller, int line);
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 static int ctest_errorsize;
@@ -261,11 +261,11 @@ static int suite_filter(struct ctest* t) {
 }
 
 static u_int64_t getCurrentTime() {
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
+    struct timeval now;
+    gettimeofday(&now, NULL);
     u_int64_t now64 = now.tv_sec;
     now64 *= 1000000;
-    now64 += (now.tv_nsec/1000);
+    now64 += (now.tv_usec);
     return now64;
 }
 
