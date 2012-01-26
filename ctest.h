@@ -79,6 +79,7 @@ void CTEST_LOG(char *fmt, ...);
 #define CTEST2(sname, tname) __CTEST2_INTERNAL(sname, tname, 0)
 #define CTEST2_SKIP(sname, tname) __CTEST2_INTERNAL(sname, tname, 1)
 
+
 void assert_str(const char* exp, const char*  real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
 
@@ -120,7 +121,7 @@ static jmp_buf ctest_err;
 
 typedef int (*runfunc2)(void*);
 
-CTEST(suite, test) { }
+static CTEST(suite, test) { }
 
 #define ANSI_BLACK "\033[0;30m"
 #define ANSI_RED "\033[0;31m"
