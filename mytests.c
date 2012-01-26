@@ -19,7 +19,7 @@ CTEST(suite3, test3) {
 }
 
 
-struct memtest_data {
+CTEST_DATA(memtest) {
     unsigned char* buffer;
 };
 
@@ -48,7 +48,7 @@ CTEST2(memtest, test2) {
 }
 
 
-struct weaklinkage_data {
+CTEST_DATA(weaklinkage) {
     int number;
 };
 
@@ -61,7 +61,7 @@ CTEST2(weaklinkage, test2) {
 }
 
 
-struct nosetup_data {
+CTEST_DATA(nosetup) {
     int value;
 };
 

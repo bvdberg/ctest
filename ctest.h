@@ -54,6 +54,8 @@ extern char* ctest_errormsg;
         .teardown = (TearDownFunc)__teardown, \
         .magic = CTEST_MAGIC };
 
+#define CTEST_DATA(sname) struct sname##_data
+
 #define CTEST_SETUP(sname) \
     void __attribute__ ((weak)) sname##_setup(struct sname##_data* data)
 
