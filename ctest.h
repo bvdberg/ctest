@@ -16,8 +16,6 @@
 #ifndef CTEST_H
 #define CTEST_H
 
-#include <stdarg.h>
-
 #define CTEST_MAGIC (0xdeadbeef)
 #define Test_Section __attribute__ ((unused,section (".ctest")))
 
@@ -107,11 +105,12 @@ void assert_fail(const char* caller, int line);
 
 #ifdef CTEST_MAIN
 
+#include <setjmp.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
-#include <setjmp.h>
 
 int ctest_errorsize;
 char* ctest_errormsg;
