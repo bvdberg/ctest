@@ -48,6 +48,16 @@ CTEST2(memtest, test2) {
 }
 
 
+CTEST_DATA(fail) {};
+
+CTEST_SETUP(fail) {
+    ASSERT_FAIL();
+}
+
+CTEST2(fail, test1) {}
+
+
+
 CTEST_DATA(weaklinkage) {
     int number;
 };
