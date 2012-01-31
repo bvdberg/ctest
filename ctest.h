@@ -16,6 +16,8 @@
 #ifndef CTEST_H
 #define CTEST_H
 
+#include <stdlib.h>
+
 typedef void (*SetupFunc)(void*);
 typedef void (*TearDownFunc)(void*);
 
@@ -113,6 +115,7 @@ void assert_fail(const char* caller, int line);
 #include <sys/types.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
@@ -122,7 +125,6 @@ static jmp_buf ctest_err;
 static int color_output = 1;
 static const char* suite_name;
 
-typedef int (*runfunc2)(void*);
 typedef int (*filter_func)(struct ctest*);
 
 #define ANSI_BLACK "\033[0;30m"
@@ -329,12 +331,10 @@ int main(int argc, const char *argv[])
                 int result = setjmp(ctest_err);
                 if (result == 0) {
                     if (test->setup) test->setup(test->data);
-                    if (test->data) {
-                        runfunc2 f2 = (runfunc2)test->run;
-                        f2(test->data);
-                    } else {
-                        test->run();
-                    }
+                    if (test->data) 
+                      test->run(test->data);
+                    else 
+                      test->run();
                     if (test->teardown) test->teardown(test->data);
                     // if we got here it's ok
                     printf("[OK]\n");
