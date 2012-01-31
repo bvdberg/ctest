@@ -252,7 +252,7 @@ void assert_fail(const char* caller, int line) {
 }
 
 
-static int no_filter(struct ctest* t) {
+static int suite_all(struct ctest* t) {
     return 1;
 }
 
@@ -283,7 +283,7 @@ int main(int argc, const char *argv[])
     static int num_fail = 0;
     static int num_skip = 0;
     static int index = 1;
-    static filter_func filter = no_filter;
+    static filter_func filter = suite_all;
 
     if (argc == 2) {
         suite_name = argv[1];
