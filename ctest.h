@@ -16,8 +16,6 @@
 #ifndef CTEST_H
 #define CTEST_H
 
-#include <stdlib.h>
-
 typedef void (*SetupFunc)(void*);
 typedef void (*TearDownFunc)(void*);
 
