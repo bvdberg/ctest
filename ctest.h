@@ -110,9 +110,9 @@ void assert_fail(const char* caller, int line);
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <stdint.h>
 
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
@@ -260,10 +260,10 @@ static int suite_filter(struct ctest* t) {
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
-static u_int64_t getCurrentTime() {
+static uint64_t getCurrentTime() {
     struct timeval now;
     gettimeofday(&now, NULL);
-    u_int64_t now64 = now.tv_sec;
+    uint64_t now64 = now.tv_sec;
     now64 *= 1000000;
     now64 += (now.tv_usec);
     return now64;
@@ -291,7 +291,7 @@ int main(int argc, const char *argv[])
     }
 
     color_output = isatty(1);
-    u_int64_t t1 = getCurrentTime();
+    uint64_t t1 = getCurrentTime();
 
     struct ctest* ctest_begin = &__TNAME(suite, test);
     struct ctest* ctest_end = &__TNAME(suite, test);
@@ -348,7 +348,7 @@ int main(int argc, const char *argv[])
             index++;
         }
     }
-    u_int64_t t2 = getCurrentTime();
+    uint64_t t2 = getCurrentTime();
 
     const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
     char results[80];
