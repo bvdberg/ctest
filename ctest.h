@@ -275,7 +275,7 @@ static void color_print(const char* color, const char* text) {
         printf("%s\n", text);
 }
 
-int main(int argc, const char *argv[])
+int ctest_main(int argc, const char *argv[])
 {
     static int total = 0;
     static int num_ok = 0;
