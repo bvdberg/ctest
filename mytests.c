@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include "ctest.h"
 
+// basic test without setup/teardown
 CTEST(suite1, test1) {
     usleep(2000);
 }
 
+// there are many different ASSERT macro's (see ctest.h)
 CTEST(suite1, test2) {
     ASSERT_EQUAL(1,2);
 }
@@ -18,20 +20,25 @@ CTEST(suite3, test3) {
 }
 
 
+// A test suite with a setup/teardown function
+// This is converted into a struct that's automatically passed to all tests in the suite
 CTEST_DATA(memtest) {
     unsigned char* buffer;
 };
 
+// Optional setup function for suite, called before every test in suite
 CTEST_SETUP(memtest) {
     CTEST_LOG("%s() data=%p buffer=%p", __func__, data, data->buffer);
     data->buffer = (unsigned char*)malloc(1024);
 }
 
+// Optional teardown function for suite, called after every test in suite
 CTEST_TEARDOWN(memtest) {
     CTEST_LOG("%s() data=%p buffer=%p", __func__, data, data->buffer);
     if (data->buffer) free(data->buffer);
 }
 
+// These tests are called with the struct* (named data) as argument
 CTEST2(memtest, test1) {
     CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
 }
@@ -49,6 +56,7 @@ CTEST2(memtest, test2) {
 
 CTEST_DATA(fail) {};
 
+// Asserts can also be used in setup/teardown functions
 CTEST_SETUP(fail) {
     ASSERT_FAIL();
 }
@@ -61,6 +69,7 @@ CTEST_DATA(weaklinkage) {
     int number;
 };
 
+// This suite has data, but no setup/teardown
 CTEST2(weaklinkage, test1) {
     CTEST_LOG("%s()", __func__);
 }
@@ -83,6 +92,7 @@ CTEST2(nosetup, test1) {
 }
 
 
+// more ASSERT examples
 CTEST(ctest, test_assert_str) {
     ASSERT_STR("foo", "foo");
     ASSERT_STR("foo", "bar");
