@@ -36,7 +36,11 @@ struct ctest {
 #define __TNAME(sname, tname) __ctest_##sname##_##tname
 
 #define __CTEST_MAGIC (0xdeadbeef)
+#ifdef __APPLE__
+#define __Test_Section __attribute__ ((unused,section ("__DATA, .ctest")))
+#else
 #define __Test_Section __attribute__ ((unused,section (".ctest")))
+#endif
 
 #define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
     struct ctest __TNAME(sname, tname) __Test_Section = { \
