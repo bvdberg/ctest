@@ -11,6 +11,10 @@ FEATURES:
 - it's easy to integrate (only 1 header file)
 - has SKIP option to skip certain test (no commenting test out anymore)
 
+Possible improvements:
+- try to use same macro for tests with/without setup/teardown. So no CTEST2
+- silent option that just shows final results (usefull when running often)
+
 ----------------------------------------------------------------------------
 test example
 
