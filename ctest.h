@@ -36,7 +36,11 @@ struct ctest {
 #define __TNAME(sname, tname) __ctest_##sname##_##tname
 
 #define __CTEST_MAGIC (0xdeadbeef)
+#ifdef __APPLE__
+#define __Test_Section __attribute__ ((unused,section ("__DATA, .ctest")))
+#else
 #define __Test_Section __attribute__ ((unused,section (".ctest")))
+#endif
 
 #define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
     struct ctest __TNAME(sname, tname) __Test_Section = { \
@@ -45,8 +49,8 @@ struct ctest {
         .run = __FNAME(sname, tname), \
         .skip = _skip, \
         .data = __data, \
-        .setup = (SetupFunc)__setup, \
-        .teardown = (TearDownFunc)__teardown, \
+        .setup = (SetupFunc)__setup,					\
+        .teardown = (TearDownFunc)__teardown,				\
         .magic = __CTEST_MAGIC };
 
 #define CTEST_DATA(sname) struct sname##_data
@@ -62,12 +66,20 @@ struct ctest {
     __CTEST_STRUCT(sname, tname, _skip, NULL, NULL, NULL) \
     void __FNAME(sname, tname)()
 
+#ifdef __APPLE__
+#define SETUP_FNAME(sname) NULL
+#define TEARDOWN_FNAME(sname) NULL
+#else
+#define SETUP_FNAME(sname) sname##_setup
+#define TEARDOWN_FNAME(sname) sname##_teardown
+#endif
+
 #define __CTEST2_INTERNAL(sname, tname, _skip) \
     static struct sname##_data  __ctest_##sname##_data; \
     CTEST_SETUP(sname); \
     CTEST_TEARDOWN(sname); \
     void __FNAME(sname, tname)(struct sname##_data* data); \
-    __CTEST_STRUCT(sname, tname, _skip, &__ctest_##sname##_data, sname##_setup, sname##_teardown) \
+    __CTEST_STRUCT(sname, tname, _skip, &__ctest_##sname##_data, SETUP_FNAME(sname), TEARDOWN_FNAME(sname)) \
     void __FNAME(sname, tname)(struct sname##_data* data)
 
 
@@ -113,6 +125,12 @@ void assert_fail(const char* caller, int line);
 #include <sys/time.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <stdlib.h>
+
+#ifdef __APPLE__
+#include <dlfcn.h>
+#endif
+
 
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
@@ -275,6 +293,26 @@ static void color_print(const char* color, const char* text) {
         printf("%s\n", text);
 }
 
+#ifdef __APPLE__
+static void *find_symbol(struct ctest *test, const char *fname)
+{
+    size_t len = strlen(test->ssname) + 1 + strlen(fname);
+    char *symbol_name = (char *) malloc(len + 1);
+    memset(symbol_name, 0, len + 1);
+    snprintf(symbol_name, len + 1, "%s_%s", test->ssname, fname);
+
+    //fprintf(stderr, ">>>> dlsym: loading %s\n", symbol_name);
+    void *symbol = dlsym(RTLD_DEFAULT, symbol_name);
+    if (!symbol) {
+        //fprintf(stderr, ">>>> ERROR: %s\n", dlerror());
+    }
+    // returns NULL on error
+    
+    free(symbol_name);
+    return symbol;
+}
+#endif
+
 int ctest_main(int argc, const char *argv[])
 {
     static int total = 0;
@@ -327,6 +365,15 @@ int ctest_main(int argc, const char *argv[])
             } else {
                 int result = setjmp(ctest_err);
                 if (result == 0) {
+#ifdef __APPLE__
+                    if (!test->setup) {
+                        test->setup = find_symbol(test, "setup");
+                    }
+                    if (!test->teardown) {
+                        test->teardown = find_symbol(test, "teardown");
+                    }
+#endif
+
                     if (test->setup) test->setup(test->data);
                     if (test->data) 
                       test->run(test->data);
