@@ -7,7 +7,7 @@ endif
 
 all: test
 
-%.o: %.c
+%.o: %.c ctest.h
 	gcc $(CCFLAGS) -c -o $@ $<
 
 test: main.o ctest.h mytests.o

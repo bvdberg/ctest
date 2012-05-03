@@ -49,8 +49,8 @@ struct ctest {
         .run = __FNAME(sname, tname), \
         .skip = _skip, \
         .data = __data, \
-        .setup = (SetupFunc)__setup, \
-        .teardown = (TearDownFunc)__teardown, \
+        .setup = NULL, \
+        .teardown = NULL, \
         .magic = __CTEST_MAGIC };
 
 #define CTEST_DATA(sname) struct sname##_data
@@ -117,6 +117,8 @@ void assert_fail(const char* caller, int line);
 #include <sys/time.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <dlfcn.h>
+#include <stdlib.h>
 
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
@@ -279,6 +281,24 @@ static void color_print(const char* color, const char* text) {
         printf("%s\n", text);
 }
 
+static void *find_symbol(struct ctest *test, const char *fname)
+{
+    size_t len = strlen(test->ssname) + 1 + strlen(fname);
+    char *symbol_name = (char *) malloc(len + 1);
+    memset(symbol_name, 0, len + 1);
+    snprintf(symbol_name, len + 1, "%s_%s", test->ssname, fname);
+
+    //fprintf(stderr, ">>>> dlsym: loading %s\n", symbol_name);
+    void *symbol = dlsym(RTLD_DEFAULT, symbol_name);
+    if (!symbol) {
+        //fprintf(stderr, ">>>> ERROR: %s\n", dlerror());
+    }
+    // returns NULL on error
+    
+    free(symbol_name);
+    return symbol;
+}
+
 int ctest_main(int argc, const char *argv[])
 {
     static int total = 0;
@@ -331,6 +351,13 @@ int ctest_main(int argc, const char *argv[])
             } else {
                 int result = setjmp(ctest_err);
                 if (result == 0) {
+                    if (!test->setup) {
+                        test->setup = find_symbol(test, "setup");
+                    }
+                    if (!test->teardown) {
+                        test->teardown = find_symbol(test, "teardown");
+                    }
+
                     if (test->setup) test->setup(test->data);
                     if (test->data) 
                       test->run(test->data);
