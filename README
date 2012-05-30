@@ -10,6 +10,7 @@ FEATURES:
 - it's small (a little over 300 lines of code!)
 - it's easy to integrate (only 1 header file)
 - has SKIP option to skip certain test (no commenting test out anymore)
+- Linux + OS/X support
 
 Possible improvements:
 - try to use same macro for tests with/without setup/teardown. So no CTEST2
