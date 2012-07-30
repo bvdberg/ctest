@@ -381,7 +381,7 @@ int ctest_main(int argc, const char *argv[])
                       test->run();
                     if (test->teardown) test->teardown(test->data);
                     // if we got here it's ok
-                    printf("[OK]\n");
+                    color_print(ANSI_BGREEN, "[OK]");
                     num_ok++;
                 } else {
                     color_print(ANSI_BRED, "[FAIL]");
