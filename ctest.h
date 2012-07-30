@@ -131,6 +131,7 @@ void assert_fail(const char* caller, int line);
 #include <dlfcn.h>
 #endif
 
+//#define COLOR_OK
 
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
@@ -381,7 +382,11 @@ int ctest_main(int argc, const char *argv[])
                       test->run();
                     if (test->teardown) test->teardown(test->data);
                     // if we got here it's ok
+#ifdef COLOR_OK
                     color_print(ANSI_BGREEN, "[OK]");
+#else
+                    printf("[OK]\n");
+#endif
                     num_ok++;
                 } else {
                     color_print(ANSI_BRED, "[FAIL]");
