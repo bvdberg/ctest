@@ -216,7 +216,9 @@ void CTEST_ERR(char *fmt, ...)
 }
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line) {
-    if (strcmp(exp, real) != 0) {
+    if ((exp == NULL && real != NULL) ||
+        (exp != NULL && real == NULL) ||
+        (exp && real && strcmp(exp, real) != 0)) {
         CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
         longjmp(ctest_err, 1);
     }
