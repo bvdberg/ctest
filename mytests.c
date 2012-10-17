@@ -154,3 +154,9 @@ CTEST(ctest, test_string_diff_ptrs) {
     const char *str = "abc\0abc";
     ASSERT_STR(str, str+4);
 }
+
+CTEST(ctest, test_large_numbers) {
+    long exp = 7200000000;
+    ASSERT_EQUAL(exp, 7200000000);
+    ASSERT_NOT_EQUAL(exp, 1200000000);
+}

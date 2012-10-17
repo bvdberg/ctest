@@ -98,7 +98,7 @@ void assert_str(const char* exp, const char*  real, const char* caller, int line
 void assert_equal(long exp, long real, const char* caller, int line);
 #define ASSERT_EQUAL(exp, real) assert_equal(exp, real, __FILE__, __LINE__)
 
-void assert_not_equal(int exp, int real, const char* caller, int line);
+void assert_not_equal(long exp, long real, const char* caller, int line);
 #define ASSERT_NOT_EQUAL(exp, real) assert_not_equal(exp, real, __FILE__, __LINE__)
 
 void assert_null(void* real, const char* caller, int line);
@@ -231,9 +231,9 @@ void assert_equal(long exp, long real, const char* caller, int line) {
     }
 }
 
-void assert_not_equal(int exp, int real, const char* caller, int line) {
+void assert_not_equal(long exp, long real, const char* caller, int line) {
     if ((exp) == (real)) {
-        CTEST_ERR("%s:%d  should not be %d", caller, line, real);
+        CTEST_ERR("%s:%d  should not be %ld", caller, line, real);
         longjmp(ctest_err, 1);
     }
 }
