@@ -137,3 +137,26 @@ CTEST(ctest, test_assert_fail) {
     ASSERT_FAIL();
 }
 
+/* Test that NULL-strings won't result in segv */
+CTEST(ctest, test_null_null) {
+    ASSERT_STR(NULL, NULL);
+}
+
+CTEST(ctest, test_null_string) {
+    ASSERT_STR(NULL, "shouldfail");
+}
+
+CTEST(ctest, test_string_null) {
+    ASSERT_STR("shouldfail", NULL);
+}
+
+CTEST(ctest, test_string_diff_ptrs) {
+    const char *str = "abc\0abc";
+    ASSERT_STR(str, str+4);
+}
+
+CTEST(ctest, test_large_numbers) {
+    long exp = 7200000000;
+    ASSERT_EQUAL(exp, 7200000000);
+    ASSERT_NOT_EQUAL(exp, 1200000000);
+}

@@ -95,10 +95,10 @@ void CTEST_LOG(char *fmt, ...);
 void assert_str(const char* exp, const char*  real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
 
-void assert_equal(int exp, int real, const char* caller, int line);
+void assert_equal(long exp, long real, const char* caller, int line);
 #define ASSERT_EQUAL(exp, real) assert_equal(exp, real, __FILE__, __LINE__)
 
-void assert_not_equal(int exp, int real, const char* caller, int line);
+void assert_not_equal(long exp, long real, const char* caller, int line);
 #define ASSERT_NOT_EQUAL(exp, real) assert_not_equal(exp, real, __FILE__, __LINE__)
 
 void assert_null(void* real, const char* caller, int line);
@@ -216,22 +216,24 @@ void CTEST_ERR(char *fmt, ...)
 }
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line) {
-    if (strcmp(exp, real) != 0) {
+    if ((exp == NULL && real != NULL) ||
+        (exp != NULL && real == NULL) ||
+        (exp && real && strcmp(exp, real) != 0)) {
         CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
         longjmp(ctest_err, 1);
     }
 }
 
-void assert_equal(int exp, int real, const char* caller, int line) {
+void assert_equal(long exp, long real, const char* caller, int line) {
     if (exp != real) {
-        CTEST_ERR("%s:%d  expected %d, got %d", caller, line, exp, real);
+        CTEST_ERR("%s:%d  expected %ld, got %ld", caller, line, exp, real);
         longjmp(ctest_err, 1);
     }
 }
 
-void assert_not_equal(int exp, int real, const char* caller, int line) {
+void assert_not_equal(long exp, long real, const char* caller, int line) {
     if ((exp) == (real)) {
-        CTEST_ERR("%s:%d  should not be %d", caller, line, real);
+        CTEST_ERR("%s:%d  should not be %ld", caller, line, real);
         longjmp(ctest_err, 1);
     }
 }
