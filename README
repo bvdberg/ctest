@@ -39,7 +39,7 @@ TEST 2/2 suite1:test2 [FAIL]
 RESULTS: 2 tests (1 ok, 1 failed, 0 skipped) ran in 1 ms
 
 There can be one argument to: ./test <suite>.
-for example: 
+for example:
 $ ./test timer
 will run all tests from suites starting with 'timer'
 
@@ -79,3 +79,43 @@ tests, but not run. To skip a test add _SKIP:
 
 CTEST_SKIP(..)    or CTEST2_SKIP(..)
 
+----------------------------------------------------------------------------
+Configuration macros:
+
+ * CTEST_MAIN
+
+   If defined, ctest_main() implementation will be included.
+
+ * CTEST_USER_TIME
+
+   If defined, this macro will be used to retreive current time in milliseconds,
+   instead of using gettimeofday().
+
+ * CTEST_USER_PRINTF
+
+   If defined, this macro will be used instead of printf().
+
+ * CTEST_USER_FLUSH
+
+   If defined, this macro will be used instead of fflush(stdout).
+
+ * CTEST_ADD_TESTS_MANUALLY
+
+   If defined, test should be added manually using macros:
+      CTEST_ADD(suite, test);    // for CTEST
+      CTEST_ADD2(suite, test)    // for CTEST2
+
+   This is not recommended but it is required on platforms that have no support
+   of linker sections.
+
+ * CTEST_DATA_IS_KEYWORD
+
+   Use '_data' instead of 'data'. Ugly workaround for MikroC.
+
+ * CTEST_COLOR_OK
+
+   Colorize 'OK' messages.
+
+ * CTEST_MORE_COLORS
+
+   Even more colors.
