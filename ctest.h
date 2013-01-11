@@ -627,6 +627,15 @@ static void color_print(const char* color, const char* text) {
         __CTEST_PRINTF("%s\n", text);
 }
 
+#ifdef CTEST_MORE_COLORS
+static void color_print_no_newline(const char* color, const char* text) {
+    if (color_output)
+        __CTEST_PRINTF("%s%s"ANSI_NORMAL, color, text);
+    else
+        __CTEST_PRINTF("%s", text);
+}
+#endif
+
 #ifdef __CTEST_APPLE
 static void *find_symbol(struct ctest *test, const char *fname)
 {
@@ -709,7 +718,16 @@ int ctest_main(int argc, const char *argv[])
             ctest_errorbuffer[0] = 0;
             ctest_errorsize = MSG_SIZE-1;
             ctest_errormsg = ctest_errorbuffer;
+#ifdef CTEST_MORE_COLORS
+            color_print_no_newline(ANSI_CYAN, "TEST");
+            __CTEST_PRINTF(" %d/%d ", index, total);
+            color_print_no_newline(ANSI_CYAN, test->ssname);
+            __CTEST_PRINTF(":");
+            color_print_no_newline(ANSI_MAGENTA, test->ttname);
+            __CTEST_PRINTF(" ");
+#else
             __CTEST_PRINTF("TEST %d/%d %s:%s ", index, total, test->ssname, test->ttname);
+#endif
             __CTEST_FLUSH();
             if (test->skip) {
                 color_print(ANSI_BYELLOW, "[SKIPPED]");
@@ -745,7 +763,7 @@ int ctest_main(int argc, const char *argv[])
                     error_code = 1;
                 }
                 if (error_code == 0) {
-#ifdef CTEST_COLOR_OK
+#if defined(CTEST_COLOR_OK) || defined(CTEST_MORE_COLORS)
                     color_print(ANSI_BGREEN, "[OK]");
 #else
                     __CTEST_PRINTF("[OK]\n");

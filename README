@@ -115,3 +115,7 @@ Configuration macros:
  * CTEST_COLOR_OK
 
    Colorize 'OK' messages.
+
+ * CTEST_MORE_COLORS
+
+   Even more colors.
