@@ -341,6 +341,7 @@ void assert_fail(const char* caller, int line);
 
 extern size_t ctest_errorsize;
 extern char* ctest_errormsg;
+extern int ctest_gcc_style;
 
 void ctest_msg_start(const char* color, const char* title);
 void ctest_msg_end();
@@ -375,10 +376,10 @@ void ctest_msg_end();
     ctest_msg_end(); \
 } while (0)
 
-/* Print error message.
+/* Print error message in default ctest style: `ERR <file>:<line> <error>'.
  * Using macro instead of function because vsnprintf() can be not available.
  */
-#define CTEST_ERR(_file, _line, ...) do { \
+#define CTEST_ERR_DEFAULT(_file, _line, ...) do { \
     int _size; \
     ctest_msg_start(ANSI_YELLOW, "ERR"); \
     _size = __CTEST_SNPRINTF(ctest_errormsg, ctest_errorsize, "%s:%d ", _file, _line); \
@@ -388,6 +389,34 @@ void ctest_msg_end();
     ctest_errorsize -= _size; \
     ctest_errormsg += _size; \
     ctest_msg_end(); \
+} while (0)
+
+/* Print error message in gcc style: `<file>:<line>: error: <error>'.
+ *
+ * This format is determined by many programs, including eclipse, emacs and colorgcc, so
+ * test errors can be automatically highlighted during your project build.
+ *
+ * Using macro instead of function because vsnprintf() can be not available.
+ */
+#define CTEST_ERR_GCC_STYLE(_file, _line, ...) do { \
+    int _size = __CTEST_SNPRINTF(ctest_errormsg, ctest_errorsize, "%s:%d: error: ", _file, _line); \
+    ctest_errorsize -= _size; \
+    ctest_errormsg += _size; \
+    _size = __CTEST_SNPRINTF(ctest_errormsg, ctest_errorsize, __VA_ARGS__); \
+    ctest_errorsize -= _size; \
+    ctest_errormsg += _size; \
+    _size = __CTEST_SNPRINTF(ctest_errormsg, ctest_errorsize, "%s", "\n"); \
+    ctest_errorsize -= _size; \
+    ctest_errormsg += _size; \
+} while (0)
+
+/* Print error message in ctest or gcc style, depending on global flag.
+ */
+#define CTEST_ERR(_file, _line, ...) do { \
+    if (ctest_gcc_style) \
+        CTEST_ERR_GCC_STYLE(_file, _line, __VA_ARGS__); \
+    else \
+        CTEST_ERR_DEFAULT(_file, _line, __VA_ARGS__); \
 } while (0)
 
 #ifndef CTEST_USER_PRINTF
@@ -421,6 +450,7 @@ void ctest_msg_end();
 
 size_t ctest_errorsize;
 char* ctest_errormsg;
+int ctest_gcc_style;
 #define MSG_SIZE 4096
 static char ctest_errorbuffer[MSG_SIZE];
 static __CTEST_JMPBUF ctest_err;
@@ -634,6 +664,8 @@ int ctest_main(int argc, const char *argv[])
     const char* color;
     static char results[80];
 
+    int arg;
+
     // Reinitialize static variables to allow calling ctest_main() more than once.
     total = 0;
     num_ok = 0;
@@ -645,9 +677,19 @@ int ctest_main(int argc, const char *argv[])
     color_output = isatty(1);
 #endif
 
-    if (argc == 2) {
-        suite_name = argv[1];
-        filter = suite_filter;
+    for (arg = 1; arg < argc; ++arg) {
+        if (argv[arg][0] == '-') {
+            if (strcmp(argv[arg], "--colored") == 0) {
+                color_output = 1;
+            }
+            else if (strcmp(argv[arg], "--gcc-style") == 0) {
+                ctest_gcc_style = 1;
+            }
+        }
+        else {
+            suite_name = argv[arg];
+            filter = suite_filter;
+        }
     }
 
     t1 = __CTEST_TIME();
