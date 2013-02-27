@@ -92,8 +92,14 @@ void CTEST_LOG(char *fmt, ...);
 #define CTEST2_SKIP(sname, tname) __CTEST2_INTERNAL(sname, tname, 1)
 
 
-void assert_str(const char* exp, const char*  real, const char* caller, int line);
+void assert_str(const char* exp, const char* real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
+
+void assert_data(const unsigned char* exp, int expsize,
+                 const unsigned char* real, int realsize,
+                 const char* caller, int line);
+#define ASSERT_DATA(exp, expsize, real, realsize) \
+    assert_data(exp, expsize, real, realsize, __FILE__, __LINE__)
 
 void assert_equal(long exp, long real, const char* caller, int line);
 #define ASSERT_EQUAL(exp, real) assert_equal(exp, real, __FILE__, __LINE__)
@@ -221,6 +227,23 @@ void assert_str(const char* exp, const char*  real, const char* caller, int line
         (exp && real && strcmp(exp, real) != 0)) {
         CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
         longjmp(ctest_err, 1);
+    }
+}
+
+void assert_data(const unsigned char* exp, int expsize,
+                 const unsigned char* real, int realsize,
+                 const char* caller, int line) {
+    int i;
+    if (expsize != realsize) {
+        CTEST_ERR("%s:%d  expected %d bytes, got %d", caller, line, expsize, realsize);
+        longjmp(ctest_err, 1);
+    }
+    for (i=0; i<expsize; i++) {
+        if (exp[i] != real[i]) {
+            CTEST_ERR("%s:%d expected 0x%02x at offset %d got 0x%02x",
+                caller, line, exp[i], i, real[i]);
+            longjmp(ctest_err, 1);
+        }
     }
 }
 
