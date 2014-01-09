@@ -101,23 +101,32 @@ void assert_data(const unsigned char* exp, int expsize,
 #define ASSERT_DATA(exp, expsize, real, realsize) \
     assert_data(exp, expsize, real, realsize, __FILE__, __LINE__)
 
+void assert_dbl_data(const double* exp, const int expsize,
+                        const double* real, const int realsize,
+                        const char* caller, int line);
+#define ASSERT_DBL_DATA(exp, expsize, real, realsize) \
+    assert_dbl_data(exp, expsize, real, realsize, __FILE__, __LINE__)
+
 void assert_equal(long exp, long real, const char* caller, int line);
 #define ASSERT_EQUAL(exp, real) assert_equal(exp, real, __FILE__, __LINE__)
+
+void assert_dbl_equal(const double exp, const double real, const char* caller, int line);
+#define ASSERT_DBL_EQUAL(exp, real) assert_equal(exp, real, __FILE__, __LINE__)
 
 void assert_not_equal(long exp, long real, const char* caller, int line);
 #define ASSERT_NOT_EQUAL(exp, real) assert_not_equal(exp, real, __FILE__, __LINE__)
 
-void assert_null(void* real, const char* caller, int line);
-#define ASSERT_NULL(real) assert_null((void*)real, __FILE__, __LINE__)
+void assert_null(const void* const real, const char *real_name, const char* caller, int line);
+#define ASSERT_NULL(real) assert_null((const void* const)real, #real, __FILE__, __LINE__)
 
-void assert_not_null(void* real, const char* caller, int line);
-#define ASSERT_NOT_NULL(real) assert_not_null(real, __FILE__, __LINE__)
+void assert_not_null(const void* const real, const char *real_name, const char* caller, int line);
+#define ASSERT_NOT_NULL(real) assert_not_null((const void* const)real, #real, __FILE__, __LINE__)
 
-void assert_true(int real, const char* caller, int line);
-#define ASSERT_TRUE(real) assert_true(real, __FILE__, __LINE__)
+void assert_true(int real, const char *real_name, const char* caller, int line);
+#define ASSERT_TRUE(real) assert_true(real, #real, __FILE__, __LINE__)
 
-void assert_false(int real, const char* caller, int line);
-#define ASSERT_FALSE(real) assert_false(real, __FILE__, __LINE__)
+void assert_false(int real, const char *real_name, const char* caller, int line);
+#define ASSERT_FALSE(real) assert_false(real, #real, __FILE__, __LINE__)
 
 void assert_fail(const char* caller, int line);
 #define ASSERT_FAIL() assert_fail(__FILE__, __LINE__)
@@ -158,9 +167,9 @@ typedef int (*filter_func)(struct ctest*);
 #define ANSI_CYAN     "\033[0;36m"
 #define ANSI_GREY     "\033[0;37m"
 #define ANSI_DARKGREY "\033[01;30m"
-#define ANSI_BRED     "\033[01;31m"
-#define ANSI_BGREEN   "\033[01;32m"
-#define ANSI_BYELLOW  "\033[01;33m"
+#define ANSI_BRED     "\033[01;41m"
+#define ANSI_BGREEN   "\033[01;42m"
+#define ANSI_BYELLOW  "\033[01;43m"
 #define ANSI_BBLUE    "\033[01;34m"
 #define ANSI_BMAGENTA "\033[01;35m"
 #define ANSI_BCYAN    "\033[01;36m"
@@ -246,10 +255,35 @@ void assert_data(const unsigned char* exp, int expsize,
         }
     }
 }
+void assert_dbl_data(const double* exp, const int expsize,
+                        const double* real, const int realsize,
+                        const char* caller, int line) {
+    int i;
+    if (expsize != realsize) {
+        CTEST_ERR("%s:%d  expected %d bytes, got %d", caller, line, expsize, realsize);
+        longjmp(ctest_err, 1);
+    }
+    for (i=0; i<expsize; i++) {
+        if (exp[i] != real[i]) {
+            CTEST_ERR("%s:%d expected %g at offset %d got %g",
+                caller, line, exp[i], i, real[i]);
+            longjmp(ctest_err, 1);
+        }
+    }
+}
+
 
 void assert_equal(long exp, long real, const char* caller, int line) {
     if (exp != real) {
         CTEST_ERR("%s:%d  expected %ld, got %ld", caller, line, exp, real);
+        longjmp(ctest_err, 1);
+    }
+}
+
+void assert_dbl_equal(const double exp, const double real, const char* caller, int line) {
+   /* TODO: need a safer check here for doubles.*/
+    if (exp != real) {
+        CTEST_ERR("%s:%d  expected %g, got %g", caller, line, exp, real);
         longjmp(ctest_err, 1);
     }
 }
@@ -261,30 +295,30 @@ void assert_not_equal(long exp, long real, const char* caller, int line) {
     }
 }
 
-void assert_null(void* real, const char* caller, int line) {
+void assert_null(const void* const real, const char *real_name, const char* caller, int line) {
     if ((real) != NULL) {
-        CTEST_ERR("%s:%d  should be NULL", caller, line);
+        CTEST_ERR("%s:%d '%s' should be NULL", caller, line, real_name);
         longjmp(ctest_err, 1);
     }
 }
 
-void assert_not_null(void* real, const char* caller, int line) {
+void assert_not_null(const void* const real, const char *real_name, const char* caller, int line) {
     if (real == NULL) {
-        CTEST_ERR("%s:%d  should not be NULL", caller, line);
+        CTEST_ERR("%s:%d '%s' should not be NULL", caller, line, real_name);
         longjmp(ctest_err, 1);
     }
 }
 
-void assert_true(int real, const char* caller, int line) {
+void assert_true(int real, const char *real_name, const char* caller, int line) {
     if ((real) == 0) {
-        CTEST_ERR("%s:%d  should be true", caller, line);
+        CTEST_ERR("%s:%d '%s' should be true", caller, line, real_name);
         longjmp(ctest_err, 1);
     }
 }
 
-void assert_false(int real, const char* caller, int line) {
+void assert_false(int real, const char *real_name, const char* caller, int line) {
     if ((real) != 0) {
-        CTEST_ERR("%s:%d  should be false", caller, line);
+        CTEST_ERR("%s:%d '%s' should be false", caller, line, real_name);
         longjmp(ctest_err, 1);
     }
 }
@@ -434,4 +468,3 @@ int ctest_main(int argc, const char *argv[])
 #endif
 
 #endif
-
