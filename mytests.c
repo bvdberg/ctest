@@ -114,6 +114,10 @@ CTEST(ctest, test_assert_null) {
     ASSERT_NULL((void*)0xdeadbeef);
 }
 
+CTEST(ctest, test_assert_not_null_const) {
+    ASSERT_NOT_NULL((const char*)"hallo");
+}
+
 CTEST(ctest, test_assert_not_null) {
     ASSERT_NOT_NULL((void*)0xdeadbeef);
     ASSERT_NOT_NULL(NULL);

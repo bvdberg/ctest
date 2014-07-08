@@ -110,7 +110,7 @@ void assert_not_equal(long exp, long real, const char* caller, int line);
 void assert_null(void* real, const char* caller, int line);
 #define ASSERT_NULL(real) assert_null((void*)real, __FILE__, __LINE__)
 
-void assert_not_null(void* real, const char* caller, int line);
+void assert_not_null(const void* real, const char* caller, int line);
 #define ASSERT_NOT_NULL(real) assert_not_null(real, __FILE__, __LINE__)
 
 void assert_true(int real, const char* caller, int line);
@@ -268,7 +268,7 @@ void assert_null(void* real, const char* caller, int line) {
     }
 }
 
-void assert_not_null(void* real, const char* caller, int line) {
+void assert_not_null(const void* real, const char* caller, int line) {
     if (real == NULL) {
         CTEST_ERR("%s:%d  should not be NULL", caller, line);
         longjmp(ctest_err, 1);
