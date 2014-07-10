@@ -164,3 +164,8 @@ CTEST(ctest, test_large_numbers) {
     ASSERT_EQUAL(exp, 7200000000);
     ASSERT_NOT_EQUAL(exp, 1200000000);
 }
+
+CTEST(ctest, test_ctest_err) {
+    CTEST_ERR("error log");
+}
+

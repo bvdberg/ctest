@@ -84,6 +84,7 @@ struct ctest {
 
 
 void CTEST_LOG(char *fmt, ...);
+void CTEST_ERR(char *fmt, ...);
 
 #define CTEST(sname, tname) __CTEST_INTERNAL(sname, tname, 0)
 #define CTEST_SKIP(sname, tname) __CTEST_INTERNAL(sname, tname, 1)
