@@ -84,7 +84,7 @@ struct ctest {
 
 
 void CTEST_LOG(char *fmt, ...);
-void CTEST_ERR(char *fmt, ...);
+void CTEST_ERR(char *fmt, ...);  // doesn't return
 
 #define CTEST(sname, tname) __CTEST_INTERNAL(sname, tname, 0)
 #define CTEST_SKIP(sname, tname) __CTEST_INTERNAL(sname, tname, 1)
@@ -220,6 +220,7 @@ void CTEST_ERR(char *fmt, ...)
     va_end(argp);
 
     msg_end();
+    longjmp(ctest_err, 1);
 }
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line) {
@@ -227,7 +228,6 @@ void assert_str(const char* exp, const char*  real, const char* caller, int line
         (exp != NULL && real == NULL) ||
         (exp && real && strcmp(exp, real) != 0)) {
         CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
-        longjmp(ctest_err, 1);
     }
 }
 
@@ -237,13 +237,11 @@ void assert_data(const unsigned char* exp, int expsize,
     int i;
     if (expsize != realsize) {
         CTEST_ERR("%s:%d  expected %d bytes, got %d", caller, line, expsize, realsize);
-        longjmp(ctest_err, 1);
     }
     for (i=0; i<expsize; i++) {
         if (exp[i] != real[i]) {
             CTEST_ERR("%s:%d expected 0x%02x at offset %d got 0x%02x",
                 caller, line, exp[i], i, real[i]);
-            longjmp(ctest_err, 1);
         }
     }
 }
@@ -251,48 +249,41 @@ void assert_data(const unsigned char* exp, int expsize,
 void assert_equal(long exp, long real, const char* caller, int line) {
     if (exp != real) {
         CTEST_ERR("%s:%d  expected %ld, got %ld", caller, line, exp, real);
-        longjmp(ctest_err, 1);
     }
 }
 
 void assert_not_equal(long exp, long real, const char* caller, int line) {
     if ((exp) == (real)) {
         CTEST_ERR("%s:%d  should not be %ld", caller, line, real);
-        longjmp(ctest_err, 1);
     }
 }
 
 void assert_null(void* real, const char* caller, int line) {
     if ((real) != NULL) {
         CTEST_ERR("%s:%d  should be NULL", caller, line);
-        longjmp(ctest_err, 1);
     }
 }
 
 void assert_not_null(const void* real, const char* caller, int line) {
     if (real == NULL) {
         CTEST_ERR("%s:%d  should not be NULL", caller, line);
-        longjmp(ctest_err, 1);
     }
 }
 
 void assert_true(int real, const char* caller, int line) {
     if ((real) == 0) {
         CTEST_ERR("%s:%d  should be true", caller, line);
-        longjmp(ctest_err, 1);
     }
 }
 
 void assert_false(int real, const char* caller, int line) {
     if ((real) != 0) {
         CTEST_ERR("%s:%d  should be false", caller, line);
-        longjmp(ctest_err, 1);
     }
 }
 
 void assert_fail(const char* caller, int line) {
     CTEST_ERR("%s:%d  shouldn't come here", caller, line);
-    longjmp(ctest_err, 1);
 }
 
 
