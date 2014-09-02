@@ -15,11 +15,7 @@ Features:
 * has SKIP option to skip certain test (no commenting test out anymore)
 * Linux + OS/X support
 
-Possible improvements:
-* try to use same macro for tests with/without setup/teardown. So no CTEST2
-* silent option that just shows final results (usefull when running often)
-* wiki page with examples
-
+![Sample output](ctest_output.png)
 
 ## test example
 ```
