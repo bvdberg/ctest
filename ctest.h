@@ -130,6 +130,7 @@ void assert_fail(const char* caller, int line);
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
+#include <inttypes.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -291,7 +292,7 @@ static int suite_all(struct ctest* t) {
     return 1;
 }
 
-static int suite_filter(struct ctest* t) { 
+static int suite_filter(struct ctest* t) {
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
@@ -325,7 +326,7 @@ static void *find_symbol(struct ctest *test, const char *fname)
         //fprintf(stderr, ">>>> ERROR: %s\n", dlerror());
     }
     // returns NULL on error
-    
+
     free(symbol_name);
     return symbol;
 }
@@ -393,9 +394,9 @@ int ctest_main(int argc, const char *argv[])
 #endif
 
                     if (test->setup) test->setup(test->data);
-                    if (test->data) 
+                    if (test->data)
                       test->run(test->data);
-                    else 
+                    else
                       test->run();
                     if (test->teardown) test->teardown(test->data);
                     // if we got here it's ok
@@ -418,7 +419,7 @@ int ctest_main(int argc, const char *argv[])
 
     const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
     char results[80];
-    sprintf(results, "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %lld ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
+    sprintf(results, "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %"PRIu64" ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
     color_print(color, results);
     return num_fail;
 }
