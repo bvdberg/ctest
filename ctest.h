@@ -169,6 +169,36 @@ typedef int (*filter_func)(struct ctest*);
 #define ANSI_WHITE    "\033[01;37m"
 #define ANSI_NORMAL   "\033[0m"
 
+#ifdef CTEST_SIG
+#include <signal.h>
+
+static void sighandler(int signum)
+{
+    char msg[128];
+
+    /* Print a message in red saying we got a signal from kernel */
+    snprintf(msg, sizeof(msg),"\n"ANSI_BRED"ERROR: test suite got signal %d",
+            signum);
+    psignal(signum, msg);
+    fputs(ANSI_NORMAL"\n", stderr);
+
+    /* "Unregister" the signal handler and send the signal back to the process
+     * so it can terminate as expected */
+    signal(signum, SIG_DFL);
+    kill(getpid(), signum);
+}
+
+/* Register the sighandler function for SIGSEGV. This function gets executed
+ * before main() so the sighandler will be already registered by the time the
+ * tests start executing */
+static void __attribute__((constructor, used))
+signal_handler_constructor(void)
+{
+    signal(SIGSEGV, sighandler);
+}
+
+#endif
+
 static CTEST(suite, test) { }
 
 static void msg_start(const char* color, const char* title) {
