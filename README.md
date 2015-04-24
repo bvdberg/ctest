@@ -90,3 +90,23 @@ tests, but not run. To skip a test add _SKIP:
 CTEST_SKIP(..)    or CTEST2_SKIP(..)
 ```
 
+----------------------------------------------------------------------------
+Configuration macros:
+
+ * CTEST_MAIN
+
+   If defined, ctest_main() implementation will be included.
+
+ * CTEST_ADD_TESTS_MANUALLY
+
+   If defined, test should be added manually using macros:
+      CTEST_ADD(suite, test);    // for CTEST
+      CTEST_ADD2(suite, test)    // for CTEST2
+
+ * CTEST_NO_JMP
+
+   If longjmp() is not available, please define.
+
+ * CTEST_NO_TTY
+
+   If isatty() is not available, please define.
