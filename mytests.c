@@ -1,4 +1,6 @@
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include "ctest.h"
 
@@ -168,4 +170,5 @@ CTEST(ctest, test_large_numbers) {
 CTEST(ctest, test_ctest_err) {
     CTEST_ERR("error log");
 }
+
 

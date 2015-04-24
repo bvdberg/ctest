@@ -43,6 +43,25 @@ struct ctest {
 #define __CTEST_APPLE
 #endif
 
+#if defined(_WIN32) && defined(_MSC_VER)
+#define __CTEST_MSVC
+#endif
+
+//config for MSVC compiler
+#ifdef __CTEST_MSVC
+
+#define __CTEST_NO_TIME
+
+#ifndef CTEST_ADD_TESTS_MANUALLY
+#define CTEST_ADD_TESTS_MANUALLY
+#endif
+//clear this flag for msvc
+#ifdef CTEST_SEGFAULT
+#undef CTEST_SEGFAULT
+#endif
+#define snprintf _snprintf_s
+#endif
+
 #ifdef CTEST_NO_JMP
 #define __CTEST_NO_JMP
 #endif
@@ -63,6 +82,7 @@ struct ctest {
 #endif
 #endif
 
+#ifndef __CTEST_MSVC
 #define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
     struct ctest __TNAME(sname, tname) __Test_Section = { \
         .ssname=#sname, \
@@ -73,7 +93,21 @@ struct ctest {
         .setup = (SetupFunc)__setup,					\
         .teardown = (TearDownFunc)__teardown,				\
         .next =  NULL, \
-        .magic = __CTEST_MAGIC };
+        .magic = __CTEST_MAGIC};
+#else
+//for msvc
+#define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
+    struct ctest __TNAME(sname, tname) __Test_Section = { \
+         #sname, \
+	 #tname, \
+	 __FNAME(sname, tname), \
+	 _skip, \
+	 __data, \
+	 (SetupFunc)__setup, \
+         (TearDownFunc)__teardown, \
+	 NULL, \
+         __CTEST_MAGIC};
+#endif
 
 #define CTEST_DATA(sname) struct sname##_data
 
@@ -195,13 +229,19 @@ void assert_fail(const char* caller, int line);
 #include <stdio.h>
 #include <string.h>
 
+#ifndef __CTEST_NO_TIME
 #include <sys/time.h>
+#include <inttypes.h>
+#endif
 #include <stdint.h>
 
-#include <inttypes.h>
 
 #ifndef __CTEST_NO_TTY
+#ifdef __CTEST_MSVC
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 #endif
 
 #include <stdlib.h>
@@ -302,11 +342,19 @@ static void __ctest_linkTests()
 static void msg_start(const char* color, const char* title) {
     int size;
     if (color_output) {
+#ifndef __CTEST_MSVC
         size = snprintf(ctest_errormsg, ctest_errorsize, "%s", color);
+#else
+	size = _snprintf_s(ctest_errormsg, ctest_errorsize, _TRUNCATE, "%s", color);
+#endif
         ctest_errorsize -= size;
         ctest_errormsg += size;
     }
+#ifndef __CTEST_MSVC
     size = snprintf(ctest_errormsg, ctest_errorsize, "  %s: ", title);
+#else
+    size = _snprintf_s(ctest_errormsg, ctest_errorsize, "  %s: ", title);
+#endif
     ctest_errorsize -= size;
     ctest_errormsg += size;
 }
@@ -314,11 +362,19 @@ static void msg_start(const char* color, const char* title) {
 static void msg_end() {
     int size;
     if (color_output) {
+#ifndef __CTEST_MSVC
         size = snprintf(ctest_errormsg, ctest_errorsize, ANSI_NORMAL);
+#else
+	size = snprintf(ctest_errormsg, ctest_errorsize, _TRUNCATE, ANSI_NORMAL);
+#endif
         ctest_errorsize -= size;
         ctest_errormsg += size;
     }
+#ifndef __CTEST_MSVC
     size = snprintf(ctest_errormsg, ctest_errorsize, "\n");
+#else
+    size = snprintf(ctest_errormsg, ctest_errorsize, _TRUNCATE, "\n");
+#endif
     ctest_errorsize -= size;
     ctest_errormsg += size;
 }
@@ -326,10 +382,11 @@ static void msg_end() {
 void CTEST_LOG(char *fmt, ...)
 {
     va_list argp;
+    int size;
     msg_start(ANSI_BLUE, "LOG");
 
     va_start(argp, fmt);
-    int size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
+    size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
     ctest_errorsize -= size;
     ctest_errormsg += size;
     va_end(argp);
@@ -340,10 +397,11 @@ void CTEST_LOG(char *fmt, ...)
 void CTEST_ERR(char *fmt, ...)
 {
     va_list argp;
+    int size;
     msg_start(ANSI_YELLOW, "ERR");
 
     va_start(argp, fmt);
-    int size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
+    size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
     ctest_errorsize -= size;
     ctest_errormsg += size;
     va_end(argp);
@@ -424,6 +482,7 @@ static int suite_filter(struct ctest* t) {
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
+#ifndef __CTEST_NO_TIME
 static uint64_t getCurrentTime() {
     struct timeval now;
     gettimeofday(&now, NULL);
@@ -432,6 +491,7 @@ static uint64_t getCurrentTime() {
     now64 += (now.tv_usec);
     return now64;
 }
+#endif
 
 static void color_print(const char* color, const char* text) {
     if (color_output)
@@ -485,6 +545,10 @@ int ctest_main(int argc, const char *argv[])
     static int index = 1;
     static filter_func filter = suite_all;
 
+    const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
+    char results[80];
+    static struct ctest* test;
+
 #ifdef CTEST_SEGFAULT
     signal(SIGSEGV, sighandler);
 #endif
@@ -497,8 +561,14 @@ int ctest_main(int argc, const char *argv[])
 #ifndef __CTEST_NO_TTY
     color_output = isatty(1);
 #endif
-    uint64_t t1 = getCurrentTime();
 
+#ifdef __CTEST_MSVC
+    color_output = 0;
+#endif
+
+#ifndef __CTEST_NO_TIME
+    uint64_t t1 = getCurrentTime();
+#endif
     /*
     struct ctest* ctest_begin = &__TNAME(suite, test);
     struct ctest* ctest_end = &__TNAME(suite, test);
@@ -523,7 +593,7 @@ int ctest_main(int argc, const char *argv[])
     __ctest_linkTests();
 #endif
 
-    static struct ctest* test;
+
     for (test = __ctest_head; test != NULL; test=test->next) {
         if (test == &__ctest_suite_test) continue;
         if (filter(test)) total++;
@@ -574,11 +644,15 @@ int ctest_main(int argc, const char *argv[])
             index++;
         }
     }
+#ifndef __CTEST_NO_TIME
     uint64_t t2 = getCurrentTime();
+#endif
 
-    const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
-    char results[80];
+#ifndef __CTEST_NO_TIME
     sprintf(results, "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %"PRIu64" ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
+#else
+    sprintf(results, "RESULTS: %d tests (%d ok, %d failed, %d skipped)", total, num_ok, num_fail, num_skip);
+#endif
     color_print(color, results);
     return num_fail;
 }
