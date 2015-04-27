@@ -274,6 +274,7 @@ static char ctest_errorbuffer[MSG_SIZE];
 static __CTEST_JMPBUF ctest_err;
 static int color_output = 1;
 static const char* suite_name;
+static const char* test_name;
 
 typedef int (*filter_func)(struct ctest*);
 
@@ -529,6 +530,14 @@ static int suite_filter(struct ctest* t) {
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
+static int suite_test_filter(struct ctest* t) {
+  int suit_match, test_match;
+  suit_match=(strncmp(suite_name, t->ssname, strlen(suite_name)) == 0);
+  test_match=(strncmp(test_name, t->ttname, strlen(test_name)) == 0);
+  return (suit_match & test_match);
+}
+
+
 #ifndef __CTEST_NO_TIME
 static uint64_t getCurrentTime() {
     struct timeval now;
@@ -603,6 +612,10 @@ int ctest_main(int argc, const char *argv[])
     if (argc == 2) {
         suite_name = argv[1];
         filter = suite_filter;
+    }else if (argc == 3) {
+        suite_name = argv[1];
+	test_name = argv[2];
+        filter = suite_test_filter;
     }
 
 #ifndef __CTEST_NO_TTY
