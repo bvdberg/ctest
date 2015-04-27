@@ -37,7 +37,7 @@ struct ctest {
 
 #define __FNAME(sname, tname) __ctest_##sname##_##tname##_run
 #define __TNAME(sname, tname) __ctest_##sname##_##tname
-
+#define __PNAME(sname, tname) __ctest_##sname##_##tname##_pointer
 
 #ifdef __APPLE__
 #define __CTEST_APPLE
@@ -53,7 +53,10 @@ struct ctest {
 #define __CTEST_NO_TIME
 
 #ifndef CTEST_ADD_TESTS_MANUALLY
-#define CTEST_ADD_TESTS_MANUALLY
+//#define CTEST_ADD_TESTS_MANUALLY
+#pragma section(".ctest$a")
+#pragma section(".ctest$u")
+#pragma section(".ctest$z")
 #endif
 //clear this flag for msvc
 #ifdef CTEST_SEGFAULT
@@ -77,6 +80,8 @@ struct ctest {
 #else
 #ifdef __CTEST_APPLE
 #define __Test_Section __attribute__ ((unused,section ("__DATA, .ctest")))
+#elif defined (__CTEST_MSVC)
+#define __Test_Section __declspec( allocate(".ctest$u"))
 #else
 #define __Test_Section __attribute__ ((unused,section (".ctest")))
 #endif
@@ -84,7 +89,7 @@ struct ctest {
 
 #ifndef __CTEST_MSVC
 #define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
-    struct ctest __TNAME(sname, tname) __Test_Section = { \
+    struct ctest __TNAME(sname, tname)  = { \
         .ssname=#sname, \
         .ttname=#tname, \
         .run = __FNAME(sname, tname), \
@@ -93,11 +98,12 @@ struct ctest {
         .setup = (SetupFunc)__setup,					\
         .teardown = (TearDownFunc)__teardown,				\
         .next =  NULL, \
-        .magic = __CTEST_MAGIC};
+        .magic = __CTEST_MAGIC}; \
+    void * __PNAME(sname, tname)[2] __Test_Section = {(void*)& __TNAME(sname,tname), (void*)__CTEST_MAGIC};
 #else
 //for msvc
 #define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
-    struct ctest __TNAME(sname, tname) __Test_Section = { \
+    struct ctest __TNAME(sname, tname) = { \
          #sname, \
 	 #tname, \
 	 __FNAME(sname, tname), \
@@ -106,16 +112,25 @@ struct ctest {
 	 (SetupFunc)__setup, \
          (TearDownFunc)__teardown, \
 	 NULL, \
-         __CTEST_MAGIC};
+         __CTEST_MAGIC}; \
+    __Test_Section void * __PNAME(sname, tname)[2]= {(void*)& __TNAME(sname,tname), (void *)__CTEST_MAGIC}; 
 #endif
 
 #define CTEST_DATA(sname) struct sname##_data
 
+#ifndef __CTEST_MSVC
 #define CTEST_SETUP(sname) \
     void __attribute__ ((weak)) sname##_setup(struct sname##_data* data)
 
 #define CTEST_TEARDOWN(sname) \
     void __attribute__ ((weak)) sname##_teardown(struct sname##_data* data)
+#else //for msvc
+#define CTEST_SETUP(sname) \
+  void sname##_setup(struct sname##_data* data)
+
+#define CTEST_TEARDOWN(sname) \
+  void sname##_teardown(struct sname##_data* data)
+#endif
 
 #define __CTEST_INTERNAL(sname, tname, _skip) \
     void __FNAME(sname, tname)(); \
@@ -280,15 +295,22 @@ typedef int (*filter_func)(struct ctest*);
 #define ANSI_WHITE    "\033[01;37m"
 #define ANSI_NORMAL   "\033[0m"
 
+#ifdef __CTEST_MSVC
+#ifndef CTEST_ADD_TESTS_MANUALLY
+__declspec(allocate(".ctest$a")) struct ctest * ctest_win_begin;
+__declspec(allocate(".ctest$z")) struct ctest * ctest_win_end;
+#endif
+#endif
+
 static CTEST(suite, test) { }
 
 
-#define __CTEST_NEXT(_test) (struct ctest *)((struct ctest *)(_test) + 1)
-#define __CTEST_PREV(_test) (struct ctest *)((struct ctest *)(_test) - 1)
+#define __CTEST_POINTER_NEXT(_test) (struct ctest **)((struct ctest **)(_test) + 2)
+#define __CTEST_POINTER_PREV(_test) (struct ctest **)((struct ctest **)(_test) - 2)
 
 /* First element of test list.
  */
-static struct ctest *__ctest_head = &__TNAME(suite, test);
+static struct ctest * * __ctest_head_p = (struct ctest **)__PNAME(suite, test);
 
 #ifdef CTEST_ADD_TESTS_MANUALLY
 
@@ -305,38 +327,63 @@ void __ctest_addTest(struct ctest *test)
 }
 #else // !CTEST_ADD_TESTS_MANUALLY
 
+#ifndef __CTEST_MSVC
 /* Add all tests to linked list automatically.
  */
 static void __ctest_linkTests()
 {
-    struct ctest *test;
-    struct ctest* ctest_begin = &__TNAME(suite, test);
-    struct ctest* ctest_end = &__TNAME(suite, test);
+    struct ctest ** test;
+    struct ctest ** ctest_begin = (struct ctest **)__PNAME(suite, test);
+    struct ctest ** ctest_end = (struct ctest **)__PNAME(suite, test);
 
     // find begin and end of section by comparing magics
     while (1) {
-        struct ctest* t = __CTEST_PREV(ctest_begin);
-        if (t->magic != __CTEST_MAGIC) break;
+        struct ctest** t = __CTEST_POINTER_PREV(ctest_begin);
+	if (t[0] == NULL) break;
+        if (t[1] != (struct ctest*)__CTEST_MAGIC) break;
         ctest_begin = t;
     }
     while (1) {
-        struct ctest* t = __CTEST_NEXT(ctest_end);
-        if (t->magic != __CTEST_MAGIC) break;
+        struct ctest** t = __CTEST_POINTER_NEXT(ctest_end);
+       	if (t[0] == NULL) break;
+        if (t[1] != (struct ctest*)__CTEST_MAGIC) break;
         ctest_end = t;
     }
-    ctest_end = __CTEST_NEXT(ctest_end); // end after last one
+    ctest_end = __CTEST_POINTER_NEXT(ctest_end); // end after last one
 
-    for (test = ctest_begin; test != ctest_end; test = __CTEST_NEXT(test)) {
-        struct ctest *next = __CTEST_NEXT(test);
-        if (next == ctest_end)
+    for (test = ctest_begin; test != ctest_end; test = __CTEST_POINTER_NEXT(test)) {
+        struct ctest ** next_p = __CTEST_POINTER_NEXT(test);
+	struct ctest * next;
+        if (next_p == ctest_end)
             next = NULL;
+	else
+	    next = next_p[0];
 
-        test->next = next;
+        (*test)->next = next;
     }
 
-    __ctest_head = ctest_begin;
+    __ctest_head_p = ctest_begin;
 }
+#else //for msvc
+static void __ctest_linkTests()
+{
+    struct ctest ** ctest_start = __ctest_head_p;
+    struct ctest ** test;
+    struct ctest * cur=ctest_start[0];
 
+    for(test=&ctest_win_begin; test!=&ctest_win_end; test++){
+      //check
+      if(test[1] == (struct ctest*)__CTEST_MAGIC){
+	//skip the start
+	if((test[0]) == ctest_start[0]) continue;
+	
+	cur->next = test[0];
+	cur=cur->next;
+	cur->next=NULL;
+      }
+    }
+}
+#endif
 #endif
 
 static void msg_start(const char* color, const char* title) {
@@ -353,7 +400,7 @@ static void msg_start(const char* color, const char* title) {
 #ifndef __CTEST_MSVC
     size = snprintf(ctest_errormsg, ctest_errorsize, "  %s: ", title);
 #else
-    size = _snprintf_s(ctest_errormsg, ctest_errorsize, "  %s: ", title);
+    size = _snprintf_s(ctest_errormsg, ctest_errorsize, _TRUNCATE, "  %s: ", title);
 #endif
     ctest_errorsize -= size;
     ctest_errormsg += size;
@@ -594,12 +641,12 @@ int ctest_main(int argc, const char *argv[])
 #endif
 
 
-    for (test = __ctest_head; test != NULL; test=test->next) {
+    for (test = *(__ctest_head_p); test != NULL; test=test->next) {
         if (test == &__ctest_suite_test) continue;
         if (filter(test)) total++;
     }
 
-    for (test = __ctest_head; test != NULL; test=test->next) {
+    for (test = *(__ctest_head_p); test != NULL; test=test->next) {
         if (test == &__ctest_suite_test) continue;
         if (filter(test)) {
             ctest_errorbuffer[0] = 0;
