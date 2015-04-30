@@ -51,6 +51,7 @@ struct ctest {
 #ifdef __CTEST_MSVC
 
 #define __CTEST_NO_TIME
+#define CTEST_NO_TTY
 
 #ifndef CTEST_ADD_TESTS_MANUALLY
 //#define CTEST_ADD_TESTS_MANUALLY
