@@ -26,6 +26,11 @@ CTEST(suite, test1) {
 CTEST(suite, test2) {
     ASSERT_EQUAL(1, 2);
 }
+
+CTEST(suite, test_dbl) {
+    ASSERT_DBL_NEAR(0.0001, 0.00011);
+    ASSERT_DBL_NEAR_TOL(0.0001, 0.00011, 1e-5);
+}
 ```
 
 NO further typing is needed! ctest does the rest.

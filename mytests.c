@@ -169,3 +169,19 @@ CTEST(ctest, test_ctest_err) {
     CTEST_ERR("error log");
 }
 
+CTEST(ctest, test_dbl_near) {
+    double a = 0.000111;
+    ASSERT_DBL_NEAR(0.0001, a);
+}
+
+CTEST(ctest, test_dbl_near_tol) {
+    double a = 0.000111;
+    ASSERT_DBL_NEAR_TOL(0.0001, a, 1e-5); /* will fail */
+}
+
+CTEST(ctest, test_dbl_far) {
+    double a = 1.1;
+    ASSERT_DBL_FAR(1., a);
+    ASSERT_DBL_FAR_TOL(1., a, 0.01);
+}
+
