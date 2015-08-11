@@ -123,6 +123,14 @@ void assert_false(int real, const char* caller, int line);
 void assert_fail(const char* caller, int line);
 #define ASSERT_FAIL() assert_fail(__FILE__, __LINE__)
 
+void assert_dbl_near(double exp, double real, double tol, const char* caller, int line);
+#define ASSERT_DBL_NEAR(exp, real) assert_dbl_near(exp, real, 1e-4, __FILE__, __LINE__)
+#define ASSERT_DBL_NEAR_TOL(exp, real, tol) assert_dbl_near(exp, real, tol, __FILE__, __LINE__)
+
+void assert_dbl_far(double exp, double real, double tol, const char* caller, int line);
+#define ASSERT_DBL_FAR(exp, real) assert_dbl_far(exp, real, 1e-4, __FILE__, __LINE__)
+#define ASSERT_DBL_FAR_TOL(exp, real, tol) assert_dbl_far(exp, real, tol, __FILE__, __LINE__)
+
 #ifdef CTEST_MAIN
 
 #include <setjmp.h>
@@ -256,6 +264,30 @@ void assert_equal(long exp, long real, const char* caller, int line) {
 void assert_not_equal(long exp, long real, const char* caller, int line) {
     if ((exp) == (real)) {
         CTEST_ERR("%s:%d  should not be %ld", caller, line, real);
+    }
+}
+
+void assert_dbl_near(double exp, double real, double tol, const char* caller, int line) {
+    double diff = exp - real;
+    double absdiff = diff;
+    /* avoid using fabs and linking with a math lib */
+    if(diff < 0) {
+      absdiff *= -1;
+    }
+    if (absdiff > tol) {
+        CTEST_ERR("%s:%d  expected %0.3e, got %0.3e (diff %0.3e, tol %0.3e)", caller, line, exp, real, diff, tol);
+    }
+}
+
+void assert_dbl_far(double exp, double real, double tol, const char* caller, int line) {
+    double diff = exp - real;
+    double absdiff = diff;
+    /* avoid using fabs and linking with a math lib */
+    if(diff < 0) {
+      absdiff *= -1;
+    }
+    if (absdiff <= tol) {
+        CTEST_ERR("%s:%d  expected %0.3e, got %0.3e (diff %0.3e, tol %0.3e)", caller, line, exp, real, diff, tol);
     }
 }
 
