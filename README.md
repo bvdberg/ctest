@@ -90,3 +90,11 @@ tests, but not run. To skip a test add _SKIP:
 CTEST_SKIP(..)    or CTEST2_SKIP(..)
 ```
 
+
+
+## Signals
+Ctest can also catch segfaults. See ctest.h after the
+```
+#ifdef CTEST_SEGFAULT
+```
+
