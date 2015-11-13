@@ -143,6 +143,8 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #define ASSERT_DBL_FAR(exp, real) assert_dbl_far(exp, real, 1e-4, __FILE__, __LINE__)
 #define ASSERT_DBL_FAR_TOL(exp, real, tol) assert_dbl_far(exp, real, tol, __FILE__, __LINE__)
 
+extern const char* my_name;
+
 #ifdef CTEST_MAIN
 
 #include <setjmp.h>
@@ -191,28 +193,42 @@ typedef int (*filter_func)(struct ctest*);
 
 static CTEST(suite, test) { }
 
-static void msg_start(const char* color, const char* title) {
-    int size;
-    if (color_output) {
-        size = snprintf(ctest_errormsg, ctest_errorsize, "%s", color);
-        ctest_errorsize -= size;
-        ctest_errormsg += size;
+inline static void vprint_errormsg(const char* const fmt, va_list ap) {
+	// (v)snprintf returns the number that would have been written
+    const int ret = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, ap);
+    if (ret < 0)
+    {
+		ctest_errormsg[0] = 0x00;
     }
-    size = snprintf(ctest_errormsg, ctest_errorsize, "  %s: ", title);
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+    else
+    {
+    	const size_t size = (size_t) ret;
+    	const size_t s = (ctest_errorsize <= size ? size -ctest_errorsize : size);
+    	// ctest_errorsize may overflow at this point
+		ctest_errorsize -= s;
+		ctest_errormsg += s;
+    }
+}
+
+inline static void print_errormsg(const char* const fmt, ...) {
+    va_list argp;
+    va_start(argp, fmt);
+    vprint_errormsg(fmt, argp);
+    va_end(argp);
+}
+
+static void msg_start(const char* color, const char* title) {
+    if (color_output) {
+    	print_errormsg("%s", color);
+    }
+    print_errormsg("  %s: ", title);
 }
 
 static void msg_end() {
-    int size;
     if (color_output) {
-        size = snprintf(ctest_errormsg, ctest_errorsize, ANSI_NORMAL);
-        ctest_errorsize -= size;
-        ctest_errormsg += size;
+    	print_errormsg(ANSI_NORMAL);
     }
-    size = snprintf(ctest_errormsg, ctest_errorsize, "\n");
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+    print_errormsg("\n");
 }
 
 void CTEST_LOG(char *fmt, ...)
@@ -221,9 +237,7 @@ void CTEST_LOG(char *fmt, ...)
     msg_start(ANSI_BLUE, "LOG");
 
     va_start(argp, fmt);
-    int size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+    vprint_errormsg(fmt, argp);
     va_end(argp);
 
     msg_end();
@@ -235,9 +249,7 @@ void CTEST_ERR(char *fmt, ...)
     msg_start(ANSI_YELLOW, "ERR");
 
     va_start(argp, fmt);
-    int size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+    vprint_errormsg(fmt, argp);
     va_end(argp);
 
     msg_end();
