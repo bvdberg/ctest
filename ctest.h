@@ -353,9 +353,9 @@ static int suite_filter(struct ctest* t) {
 static uint64_t getCurrentTime() {
     struct timeval now;
     gettimeofday(&now, NULL);
-    uint64_t now64 = now.tv_sec;
+    uint64_t now64 = (uint64_t) now.tv_sec;
     now64 *= 1000000;
-    now64 += (now.tv_usec);
+    now64 += ((uint64_t) now.tv_usec);
     return now64;
 }
 
