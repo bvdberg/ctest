@@ -16,6 +16,18 @@
 #ifndef CTEST_H
 #define CTEST_H
 
+#if defined _WIN32 || defined __CYGWIN__
+#ifndef WIN32
+#define WIN32
+#endif
+#endif
+
+#ifndef WIN32
+#define WEAK __attribute__ ((weak))
+#else
+#define WEAK
+#endif
+
 typedef void (*SetupFunc)(void*);
 typedef void (*TearDownFunc)(void*);
 
@@ -56,10 +68,10 @@ struct ctest {
 #define CTEST_DATA(sname) struct sname##_data
 
 #define CTEST_SETUP(sname) \
-    void __attribute__ ((weak)) sname##_setup(struct sname##_data* data)
+    void WEAK sname##_setup(struct sname##_data* data)
 
 #define CTEST_TEARDOWN(sname) \
-    void __attribute__ ((weak)) sname##_teardown(struct sname##_data* data)
+    void WEAK sname##_teardown(struct sname##_data* data)
 
 #define __CTEST_INTERNAL(sname, tname, _skip) \
     void __FNAME(sname, tname)(); \
@@ -447,9 +459,9 @@ int ctest_main(int argc, const char *argv[])
 
                     if (test->setup) test->setup(test->data);
                     if (test->data)
-                      test->run(test->data);
+                        test->run(test->data);
                     else
-                      test->run();
+                        test->run();
                     if (test->teardown) test->teardown(test->data);
                     // if we got here it's ok
 #ifdef COLOR_OK
