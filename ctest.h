@@ -157,6 +157,13 @@ static jmp_buf ctest_err;
 static int color_output = 1;
 static const char* suite_name;
 
+static struct suite_names {
+	const char** names;
+	int n;
+} suite_name_excl, suite_name_skip;
+
+const char* my_name;
+
 typedef int (*filter_func)(struct ctest*);
 
 #define ANSI_BLACK    "\033[0;30m"
@@ -320,12 +327,42 @@ void assert_fail(const char* caller, int line) {
 }
 
 
-static int suite_all(struct ctest* t) {
-    return 1;
+static int suite_filter_incl(struct ctest* t) {
+    return (suite_name == NULL || strncmp(suite_name, t->ssname, strlen(suite_name)) == 0);
+}
+
+static int suite_filter_names(struct ctest* t, const struct suite_names* suites) {
+	if (suites->names != NULL && suites->n > 0) {
+		for (int i = 0; i < suites->n; i++) {
+			if (strncmp(suites->names[i], t->ssname, strlen(suites->names[i])) == 0) {
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+static void suite_filter_set(struct suite_names* suites, const char** names, const int n) {
+	suites->names = names;
+	suites->n = 0;
+
+	for (int i = 0; i < n; i++) {
+		if (suites->names[i] != 0) {
+			suites->n += 1;
+		}
+	}
+}
+
+static int suite_filter_excl(struct ctest* t) {
+	return suite_filter_names(t, &suite_name_excl);
+}
+
+static int suite_filter_skip(struct ctest* t) {
+	return suite_filter_names(t, &suite_name_skip);
 }
 
 static int suite_filter(struct ctest* t) {
-    return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
+    return (suite_filter_incl(t) && !suite_filter_excl(t));
 }
 
 static uint64_t getCurrentTime() {
@@ -387,15 +424,20 @@ int ctest_main(int argc, const char *argv[])
     static int num_fail = 0;
     static int num_skip = 0;
     static int index = 1;
-    static filter_func filter = suite_all;
+    static filter_func filter = suite_filter;
+
+    my_name = argv[0];
 
 #ifdef CTEST_SEGFAULT
     signal(SIGSEGV, sighandler);
 #endif
 
-    if (argc == 2) {
+    if (argc >= 2) {
         suite_name = argv[1];
-        filter = suite_filter;
+    }
+
+    if (argc >= 3) {
+    	suite_filter_set(&suite_name_skip, argv +2, argc -2);
     }
 
     color_output = isatty(1);
@@ -420,6 +462,7 @@ int ctest_main(int argc, const char *argv[])
     for (test = ctest_begin; test != ctest_end; test++) {
         if (test == &__ctest_suite_test) continue;
         if (filter(test)) total++;
+        if (suite_filter_skip(test)) test->skip = 1;
     }
 
     for (test = ctest_begin; test != ctest_end; test++) {
