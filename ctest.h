@@ -143,8 +143,6 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #define ASSERT_DBL_FAR(exp, real) assert_dbl_far(exp, real, 1e-4, __FILE__, __LINE__)
 #define ASSERT_DBL_FAR_TOL(exp, real, tol) assert_dbl_far(exp, real, tol, __FILE__, __LINE__)
 
-extern const char* my_name;
-
 #ifdef CTEST_MAIN
 
 #include <setjmp.h>
