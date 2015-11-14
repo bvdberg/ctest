@@ -194,12 +194,9 @@ static CTEST(suite, test) { }
 inline static void vprint_errormsg(const char* const fmt, va_list ap) {
 	// (v)snprintf returns the number that would have been written
     const int ret = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, ap);
-    if (ret < 0)
-    {
+    if (ret < 0) {
 		ctest_errormsg[0] = 0x00;
-    }
-    else
-    {
+    } else {
     	const size_t size = (size_t) ret;
     	const size_t s = (ctest_errorsize <= size ? size -ctest_errorsize : size);
     	// ctest_errorsize may overflow at this point
