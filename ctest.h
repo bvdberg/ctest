@@ -147,22 +147,14 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #include <dlfcn.h>
 #endif
 
-#ifdef WIN32
-#undef USE_COLORS
-#endif
-
-#ifdef USE_COLORS
-static int color_output = 1;
 //#define COLOR_OK
-#else
-static int color_output = 0;
-#endif
 
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
 #define MSG_SIZE 4096
 static char ctest_errorbuffer[MSG_SIZE];
 static jmp_buf ctest_err;
+static int color_output = 1;
 static const char* suite_name;
 
 typedef int (*filter_func)(struct ctest*);
@@ -405,8 +397,11 @@ int ctest_main(int argc, const char *argv[])
         suite_name = argv[1];
         filter = suite_filter;
     }
-
+#ifdef USE_COLORS
     color_output = isatty(1);
+#else
+    color_output = 0;
+#endif
     uint64_t t1 = getCurrentTime();
 
     struct ctest* ctest_begin = &__TNAME(suite, test);
