@@ -28,6 +28,8 @@
 #define WEAK
 #endif
 
+#include <stdio.h>
+
 typedef void (*SetupFunc)(void*);
 typedef void (*TearDownFunc)(void*);
 
@@ -108,8 +110,8 @@ void CTEST_ERR(char *fmt, ...);  // doesn't return
 void assert_str(const char* exp, const char* real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
 
-void assert_data(const unsigned char* exp, int expsize,
-                 const unsigned char* real, int realsize,
+void assert_data(const unsigned char* exp, size_t expsize,
+                 const unsigned char* real, size_t realsize,
                  const char* caller, int line);
 #define ASSERT_DATA(exp, expsize, real, realsize) \
     assert_data(exp, expsize, real, realsize, __FILE__, __LINE__)
@@ -259,17 +261,17 @@ void assert_str(const char* exp, const char*  real, const char* caller, int line
     }
 }
 
-void assert_data(const unsigned char* exp, int expsize,
-                 const unsigned char* real, int realsize,
+void assert_data(const unsigned char* exp, size_t expsize,
+                 const unsigned char* real, size_t realsize,
                  const char* caller, int line) {
-    int i;
+    size_t i;
     if (expsize != realsize) {
         CTEST_ERR("%s:%d  expected %d bytes, got %d", caller, line, expsize, realsize);
     }
     for (i=0; i<expsize; i++) {
         if (exp[i] != real[i]) {
-            CTEST_ERR("%s:%d expected 0x%02x at offset %d got 0x%02x",
-                caller, line, exp[i], i, real[i]);
+            CTEST_ERR("%s:%d expected 0x%02x at offset %llu got 0x%02x",
+                caller, line, exp[i], (unsigned long long) i, real[i]);
         }
     }
 }
