@@ -116,11 +116,17 @@ void assert_data(const unsigned char* exp, size_t expsize,
 #define ASSERT_DATA(exp, expsize, real, realsize) \
     assert_data(exp, expsize, real, realsize, __FILE__, __LINE__)
 
-void assert_equal(long exp, long real, const char* caller, int line);
+void assert_equal(ssize_t exp, ssize_t real, const char* caller, int line);
 #define ASSERT_EQUAL(exp, real) assert_equal(exp, real, __FILE__, __LINE__)
 
-void assert_not_equal(long exp, long real, const char* caller, int line);
+void assert_equal_u(size_t exp, size_t real, const char* caller, int line);
+#define ASSERT_EQUAL_U(exp, real) assert_equal_u(exp, real, __FILE__, __LINE__)
+
+void assert_not_equal(ssize_t exp, ssize_t real, const char* caller, int line);
 #define ASSERT_NOT_EQUAL(exp, real) assert_not_equal(exp, real, __FILE__, __LINE__)
+
+void assert_not_equal_u(size_t exp, size_t real, const char* caller, int line);
+#define ASSERT_NOT_EQUAL_U(exp, real) assert_not_equal_u(exp, real, __FILE__, __LINE__)
 
 void assert_null(void* real, const char* caller, int line);
 #define ASSERT_NULL(real) assert_null((void*)real, __FILE__, __LINE__)
@@ -276,15 +282,27 @@ void assert_data(const unsigned char* exp, size_t expsize,
     }
 }
 
-void assert_equal(long exp, long real, const char* caller, int line) {
+void assert_equal(ssize_t exp, ssize_t real, const char* caller, int line) {
     if (exp != real) {
-        CTEST_ERR("%s:%d  expected %ld, got %ld", caller, line, exp, real);
+        CTEST_ERR("%s:%d  expected %lld, got %lld", caller, line, (long long) exp, (long long) real);
     }
 }
 
-void assert_not_equal(long exp, long real, const char* caller, int line) {
+void assert_equal_u(size_t exp, size_t real, const char* caller, int line) {
+    if (exp != real) {
+        CTEST_ERR("%s:%d  expected %llu, got %llu", caller, line, (unsigned long long) exp, (unsigned long long) real);
+    }
+}
+
+void assert_not_equal(ssize_t exp, ssize_t real, const char* caller, int line) {
     if ((exp) == (real)) {
-        CTEST_ERR("%s:%d  should not be %ld", caller, line, real);
+        CTEST_ERR("%s:%d  should not be %lld", caller, (long long) line, (long long) real);
+    }
+}
+
+void assert_not_equal_u(size_t exp, size_t real, const char* caller, int line) {
+    if ((exp) == (real)) {
+        CTEST_ERR("%s:%d  should not be %llu", caller, (unsigned long long) line, (unsigned long long) real);
     }
 }
 
