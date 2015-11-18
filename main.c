@@ -3,7 +3,7 @@
 #define CTEST_MAIN
 // uncomment line below to get nicer logging on segfaults
 #define CTEST_SEGFAULT
-#define USE_COLORS
+#define CTEST_USE_COLORS
 #include "ctest.h"
 
 int main(int argc, const char *argv[])

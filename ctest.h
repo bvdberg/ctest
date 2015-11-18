@@ -397,7 +397,7 @@ int ctest_main(int argc, const char *argv[])
         suite_name = argv[1];
         filter = suite_filter;
     }
-#ifdef USE_COLORS
+#ifdef CTEST_USE_COLORS
     color_output = isatty(1);
 #else
     color_output = 0;
