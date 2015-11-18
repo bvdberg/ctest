@@ -160,9 +160,9 @@ CTEST(ctest, test_string_diff_ptrs) {
 }
 
 CTEST(ctest, test_large_numbers) {
-    long exp = 7200000000;
-    ASSERT_EQUAL(exp, 7200000000);
-    ASSERT_NOT_EQUAL(exp, 1200000000);
+    unsigned long exp = 4200000000u;
+    ASSERT_EQUAL_U(exp, 4200000000u);
+    ASSERT_NOT_EQUAL_U(exp, 1200000000u);
 }
 
 CTEST(ctest, test_ctest_err) {
@@ -184,4 +184,3 @@ CTEST(ctest, test_dbl_far) {
     ASSERT_DBL_FAR(1., a);
     ASSERT_DBL_FAR_TOL(1., a, 0.01);
 }
-
