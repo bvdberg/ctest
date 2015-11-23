@@ -340,6 +340,7 @@ void assert_fail(const char* caller, int line) {
 
 
 static int suite_all(struct ctest* t) {
+    (void) t; // fix unused parameter warning
     return 1;
 }
 
