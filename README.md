@@ -45,8 +45,8 @@ TEST 2/2 suite1:test2 [FAIL]
 RESULTS: 2 tests (1 ok, 1 failed, 0 skipped) ran in 1 ms
 ```
 
-There can be one argument to: ./test <suite>. for example: 
-```
+There can be one argument to: ./test <suite>. for example:
+```bash
 $ ./test timer
 ```
 will run all tests from suites starting with 'timer'
@@ -101,5 +101,13 @@ CTEST_SKIP(..)    or CTEST2_SKIP(..)
 Ctest can also catch segfaults. See ctest.h after the
 ```
 #ifdef CTEST_SEGFAULT
+```
+
+## Other options
+There are several other options that can be enabled/disabled at compile-time:
+
+Disable all color use:
+```c
+#define CTEST_NO_COLORS
 ```
 

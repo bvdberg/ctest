@@ -437,10 +437,10 @@ int ctest_main(int argc, const char *argv[])
         suite_name = argv[1];
         filter = suite_filter;
     }
-#ifdef CTEST_USE_COLORS
-    color_output = isatty(1);
-#else
+#ifdef CTEST_NO_COLORS
     color_output = 0;
+#else
+    color_output = isatty(1);
 #endif
     uint64_t t1 = getCurrentTime();
 
