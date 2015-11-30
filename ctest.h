@@ -481,10 +481,10 @@ int ctest_main(int argc, const char *argv[])
                 if (result == 0) {
 #ifdef __APPLE__
                     if (!test->setup) {
-                        test->setup = find_symbol(test, "setup");
+                        test->setup = (SetupFunc) find_symbol(test, "setup");
                     }
                     if (!test->teardown) {
-                        test->teardown = find_symbol(test, "teardown");
+                        test->teardown = (SetupFunc) find_symbol(test, "teardown");
                     }
 #endif
 
