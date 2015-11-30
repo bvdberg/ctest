@@ -484,7 +484,7 @@ int ctest_main(int argc, const char *argv[])
                         test->setup = (SetupFunc) find_symbol(test, "setup");
                     }
                     if (!test->teardown) {
-                        test->teardown = (SetupFunc) find_symbol(test, "teardown");
+                        test->teardown = (TearDownFunc) find_symbol(test, "teardown");
                     }
 #endif
 
