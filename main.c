@@ -1,9 +1,12 @@
 #include <stdio.h>
 
 #define CTEST_MAIN
+
 // uncomment line below to get nicer logging on segfaults
 #define CTEST_SEGFAULT
 //#define CTEST_NO_COLORS
+//#define CTEST_COLOR_OK
+
 #include "ctest.h"
 
 int main(int argc, const char *argv[])

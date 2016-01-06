@@ -167,8 +167,6 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #include <dlfcn.h>
 #endif
 
-//#define COLOR_OK
-
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
 #define MSG_SIZE 4096
@@ -495,7 +493,7 @@ int ctest_main(int argc, const char *argv[])
                         test->run();
                     if (test->teardown) test->teardown(test->data);
                     // if we got here it's ok
-#ifdef COLOR_OK
+#ifdef CTEST_COLOR_OK
                     color_print(ANSI_BGREEN, "[OK]");
 #else
                     printf("[OK]\n");
