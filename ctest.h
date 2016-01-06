@@ -28,7 +28,8 @@
 #define WEAK
 #endif
 
-#include <stdio.h>
+#include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
+#include <stddef.h> /* size_t */
 
 typedef void (*SetupFunc)(void*);
 typedef void (*TearDownFunc)(void*);
@@ -116,16 +117,16 @@ void assert_data(const unsigned char* exp, size_t expsize,
 #define ASSERT_DATA(exp, expsize, real, realsize) \
     assert_data(exp, expsize, real, realsize, __FILE__, __LINE__)
 
-void assert_equal(ssize_t exp, ssize_t real, const char* caller, int line);
+void assert_equal(intmax_t exp, intmax_t real, const char* caller, int line);
 #define ASSERT_EQUAL(exp, real) assert_equal(exp, real, __FILE__, __LINE__)
 
-void assert_equal_u(size_t exp, size_t real, const char* caller, int line);
+void assert_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line);
 #define ASSERT_EQUAL_U(exp, real) assert_equal_u(exp, real, __FILE__, __LINE__)
 
-void assert_not_equal(ssize_t exp, ssize_t real, const char* caller, int line);
+void assert_not_equal(intmax_t exp, intmax_t real, const char* caller, int line);
 #define ASSERT_NOT_EQUAL(exp, real) assert_not_equal(exp, real, __FILE__, __LINE__)
 
-void assert_not_equal_u(size_t exp, size_t real, const char* caller, int line);
+void assert_not_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line);
 #define ASSERT_NOT_EQUAL_U(exp, real) assert_not_equal_u(exp, real, __FILE__, __LINE__)
 
 void assert_null(void* real, const char* caller, int line);
@@ -158,7 +159,6 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
-#include <inttypes.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -272,37 +272,37 @@ void assert_data(const unsigned char* exp, size_t expsize,
                  const char* caller, int line) {
     size_t i;
     if (expsize != realsize) {
-        CTEST_ERR("%s:%d  expected %d bytes, got %d", caller, line, expsize, realsize);
+        CTEST_ERR("%s:%d  expected %" PRIuMAX " bytes, got %" PRIuMAX, caller, line, (uintmax_t) expsize, (uintmax_t) realsize);
     }
     for (i=0; i<expsize; i++) {
         if (exp[i] != real[i]) {
-            CTEST_ERR("%s:%d expected 0x%02x at offset %llu got 0x%02x",
-                caller, line, exp[i], (unsigned long long) i, real[i]);
+            CTEST_ERR("%s:%d expected 0x%02x at offset %" PRIuMAX " got 0x%02x",
+                caller, line, exp[i], (uintmax_t) i, real[i]);
         }
     }
 }
 
-void assert_equal(ssize_t exp, ssize_t real, const char* caller, int line) {
+void assert_equal(intmax_t exp, intmax_t real, const char* caller, int line) {
     if (exp != real) {
-        CTEST_ERR("%s:%d  expected %lld, got %lld", caller, line, (long long) exp, (long long) real);
+        CTEST_ERR("%s:%d  expected %" PRIdMAX ", got %" PRIdMAX, caller, line, exp, real);
     }
 }
 
-void assert_equal_u(size_t exp, size_t real, const char* caller, int line) {
+void assert_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line) {
     if (exp != real) {
-        CTEST_ERR("%s:%d  expected %llu, got %llu", caller, line, (unsigned long long) exp, (unsigned long long) real);
+        CTEST_ERR("%s:%d  expected %" PRIuMAX ", got %" PRIuMAX, caller, line, exp, real);
     }
 }
 
-void assert_not_equal(ssize_t exp, ssize_t real, const char* caller, int line) {
+void assert_not_equal(intmax_t exp, intmax_t real, const char* caller, int line) {
     if ((exp) == (real)) {
-        CTEST_ERR("%s:%d  should not be %lld", caller, (long long) line, (long long) real);
+        CTEST_ERR("%s:%d  should not be %" PRIdMAX, caller, line, real);
     }
 }
 
-void assert_not_equal_u(size_t exp, size_t real, const char* caller, int line) {
+void assert_not_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line) {
     if ((exp) == (real)) {
-        CTEST_ERR("%s:%d  should not be %llu", caller, (unsigned long long) line, (unsigned long long) real);
+        CTEST_ERR("%s:%d  should not be %" PRIuMAX, caller, line, real);
     }
 }
 
@@ -514,7 +514,7 @@ int ctest_main(int argc, const char *argv[])
 
     const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
     char results[80];
-    sprintf(results, "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %"PRIu64" ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
+    sprintf(results, "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %" PRIu64 " ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
     color_print(color, results);
     return num_fail;
 }
