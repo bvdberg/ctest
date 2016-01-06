@@ -98,8 +98,8 @@ struct ctest {
     void __FNAME(sname, tname)(struct sname##_data* data)
 
 
-void CTEST_LOG(char *fmt, ...);
-void CTEST_ERR(char *fmt, ...);  // doesn't return
+void CTEST_LOG(const char* fmt, ...);
+void CTEST_ERR(const char* fmt, ...);  // doesn't return
 
 #define CTEST(sname, tname) __CTEST_INTERNAL(sname, tname, 0)
 #define CTEST_SKIP(sname, tname) __CTEST_INTERNAL(sname, tname, 1)
@@ -234,7 +234,7 @@ static void msg_end() {
     print_errormsg("\n");
 }
 
-void CTEST_LOG(char *fmt, ...)
+void CTEST_LOG(const char* fmt, ...)
 {
     va_list argp;
     msg_start(ANSI_BLUE, "LOG");
@@ -246,7 +246,7 @@ void CTEST_LOG(char *fmt, ...)
     msg_end();
 }
 
-void CTEST_ERR(char *fmt, ...)
+void CTEST_ERR(const char* fmt, ...)
 {
     va_list argp;
     msg_start(ANSI_YELLOW, "ERR");
