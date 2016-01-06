@@ -1,8 +1,8 @@
 UNAME=$(shell uname)
 
 CCFLAGS=-Wall -Wextra -Wno-unused-parameter -O3
-ifdef CTEST_COLOR_OK
-CCFLAGS+=-DCOLOR_OK
+ifdef CTEST_NO_COLORS
+CCFLAGS+=-DCTEST_NO_COLORS
 endif
 
 ifeq ($(UNAME), Darwin)
