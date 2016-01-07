@@ -95,19 +95,29 @@ tests, but not run. To skip a test add _SKIP:
 CTEST_SKIP(..)    or CTEST2_SKIP(..)
 ```
 
+## Features
 
+The are some features that can be enabled/disabled at compile-time. Each can
+be enabled by enabling the #define before including *ctest.h*, see main.c.
 
-## Signals
-Ctest can also catch segfaults. See ctest.h after the
+#### Signals
+
+```c
+#define CTEST_SEGFAULT
 ```
-#ifdef CTEST_SEGFAULT
-```
+ctest will now catch segfaults and display them as error.
 
-## Other options
-There are several other options that can be enabled/disabled at compile-time:
+#### Colors
 
-Disable all color use:
+There are 2 features regarding colors:
 ```c
 #define CTEST_NO_COLORS
+#define CTEST_COLOR_OK
 ```
+
+The first one disables all color output (Note that color output will be
+disabled also when stdout is piped to file).
+
+The CTEST_COLOR_OK will turn the [OK] messages green if enabled. Some users
+only want failing tests to draw attention and can leave this out then.
 
