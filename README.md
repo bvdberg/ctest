@@ -18,7 +18,7 @@ Features:
 ![Sample output](ctest_output.png)
 
 ## test example
-```
+```c
 CTEST(suite, test1) {
     ASSERT_STR("foo", "foo");
 }
@@ -37,7 +37,7 @@ NO further typing is needed! ctest does the rest.
 
 
 ## example output when running ctest:
-```
+```bash
 $ ./test
 TEST 1/2 suite1:test1 [OK]
 TEST 2/2 suite1:test2 [FAIL]
@@ -57,14 +57,14 @@ NOTE: when piping output to a file/process, ctest will not color the output
 ## Fixtures:
 A testcase with a setup()/teardown() is described below. An unsigned
 char buffer is malloc-ed before each test in the suite and freed afterwards.
-```
+```c
 CTEST_DATA(mytest) {
     unsigned char* buffer;
 };
 ```
 
 NOTE: the mytest_data struct is available in setup/teardown/run functions as 'data'
-```
+```c
 CTEST_SETUP(mytest) {
     data->buffer = (unsigned char*)malloc(1024);
 }
@@ -77,7 +77,7 @@ CTEST_TEARDOWN(mytest) {
 NOTE: setup will be called before this test (and ony other test in the same suite)
 
 NOTE: CTEST_LOG() can be used to log warnings consistent with the normal output format
-```
+```c
 CTEST2(mytest, test1) {
     CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
 }
@@ -91,7 +91,7 @@ NOTE: It's possible to only have a setup() or teardown()
 Instead of commenting out a test (and subsequently never remembering to turn it
 back on, ctest allows skipping of tests. Skipped tests are still shown when running
 tests, but not run. To skip a test add _SKIP:
-```
+```c
 CTEST_SKIP(..)    or CTEST2_SKIP(..)
 ```
 
