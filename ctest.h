@@ -52,13 +52,13 @@ struct ctest {
 
 #define __CTEST_MAGIC (0xdeadbeef)
 #ifdef __APPLE__
-#define __Test_Section __attribute__ ((unused,section ("__DATA, .ctest")))
+#define __Test_Section __attribute__ ((used, section ("__DATA, .ctest")))
 #else
-#define __Test_Section __attribute__ ((unused,section (".ctest")))
+#define __Test_Section __attribute__ ((used, section (".ctest")))
 #endif
 
 #define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
-    struct ctest __TNAME(sname, tname) __Test_Section = { \
+    static struct ctest __TNAME(sname, tname) __Test_Section = { \
         .ssname=#sname, \
         .ttname=#tname, \
         .run = __FNAME(sname, tname), \
@@ -459,12 +459,12 @@ int ctest_main(int argc, const char *argv[])
 
     static struct ctest* test;
     for (test = ctest_begin; test != ctest_end; test++) {
-        if (test == &__ctest_suite_test) continue;
+        if (test == &__TNAME(suite, test)) continue;
         if (filter(test)) total++;
     }
 
     for (test = ctest_begin; test != ctest_end; test++) {
-        if (test == &__ctest_suite_test) continue;
+        if (test == &__TNAME(suite, test)) continue;
         if (filter(test)) {
             ctest_errorbuffer[0] = 0;
             ctest_errorsize = MSG_SIZE-1;
