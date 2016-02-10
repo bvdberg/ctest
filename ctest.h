@@ -1,4 +1,4 @@
-/* Copyright 2011,2012 Bas van den Berg
+/* Copyright 2011-2015 Bas van den Berg
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,21 @@
 
 #ifndef CTEST_H
 #define CTEST_H
+
+#if defined _WIN32 || defined __CYGWIN__
+#ifndef WIN32
+#define WIN32
+#endif
+#endif
+
+#ifndef WIN32
+#define WEAK __attribute__ ((weak))
+#else
+#define WEAK
+#endif
+
+#include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
+#include <stddef.h> /* size_t */
 
 typedef void (*SetupFunc)(void*);
 typedef void (*TearDownFunc)(void*);
@@ -51,27 +66,25 @@ struct ctest {
 #ifdef __CTEST_MSVC
 
 #define __CTEST_NO_TIME
-#define CTEST_NO_TTY
+#define CTEST_NO_COLORS
 
 #ifndef CTEST_ADD_TESTS_MANUALLY
-//#define CTEST_ADD_TESTS_MANUALLY
 #pragma section(".ctest$a")
 #pragma section(".ctest$u")
 #pragma section(".ctest$z")
 #endif
+
 //clear this flag for msvc
 #ifdef CTEST_SEGFAULT
 #undef CTEST_SEGFAULT
 #endif
+
 #define snprintf _snprintf_s
+#define inline __inline
 #endif
 
 #ifdef CTEST_NO_JMP
 #define __CTEST_NO_JMP
-#endif
-
-#ifdef CTEST_NO_TTY
-#define __CTEST_NO_TTY
 #endif
 
 #define __CTEST_MAGIC (0xdeadbeef)
@@ -80,17 +93,17 @@ struct ctest {
 # define __Test_Section
 #else
 #ifdef __CTEST_APPLE
-#define __Test_Section __attribute__ ((unused,section ("__DATA, .ctest")))
+#define __Test_Section __attribute__ ((used, section ("__DATA, .ctest")))
 #elif defined (__CTEST_MSVC)
 #define __Test_Section __declspec( allocate(".ctest$u"))
 #else
-#define __Test_Section __attribute__ ((unused,section (".ctest")))
+#define __Test_Section __attribute__ ((used, section (".ctest")))
 #endif
 #endif
 
 #ifndef __CTEST_MSVC
 #define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
-    struct ctest __TNAME(sname, tname)  = { \
+    static struct ctest __TNAME(sname, tname)  = { \
         .ssname=#sname, \
         .ttname=#tname, \
         .run = __FNAME(sname, tname), \
@@ -100,11 +113,11 @@ struct ctest {
         .teardown = (TearDownFunc)__teardown,				\
         .next =  NULL, \
         .magic = __CTEST_MAGIC}; \
-    void * __PNAME(sname, tname)[2] __Test_Section = {(void*)& __TNAME(sname,tname), (void*)__CTEST_MAGIC};
+    static void * __PNAME(sname, tname)[2] __Test_Section = {(void*)& __TNAME(sname,tname), (void*)__CTEST_MAGIC};
 #else
 //for msvc
 #define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
-    struct ctest __TNAME(sname, tname) = { \
+    static struct ctest __TNAME(sname, tname) = { \
          #sname, \
 	 #tname, \
 	 __FNAME(sname, tname), \
@@ -114,24 +127,16 @@ struct ctest {
          (TearDownFunc)__teardown, \
 	 NULL, \
          __CTEST_MAGIC}; \
-    __Test_Section void * __PNAME(sname, tname)[2]= {(void*)& __TNAME(sname,tname), (void *)__CTEST_MAGIC}; 
+    __Test_Section static void * __PNAME(sname, tname)[2]= {(void*)& __TNAME(sname,tname), (void *)__CTEST_MAGIC}; 
 #endif
 
 #define CTEST_DATA(sname) struct sname##_data
 
-#ifndef __CTEST_MSVC
 #define CTEST_SETUP(sname) \
-    void __attribute__ ((weak)) sname##_setup(struct sname##_data* data)
+    void WEAK sname##_setup(struct sname##_data* data)
 
 #define CTEST_TEARDOWN(sname) \
-    void __attribute__ ((weak)) sname##_teardown(struct sname##_data* data)
-#else //for msvc
-#define CTEST_SETUP(sname) \
-  void sname##_setup(struct sname##_data* data)
-
-#define CTEST_TEARDOWN(sname) \
-  void sname##_teardown(struct sname##_data* data)
-#endif
+    void WEAK sname##_teardown(struct sname##_data* data)
 
 #define __CTEST_INTERNAL(sname, tname, _skip) \
     void __FNAME(sname, tname)(); \
@@ -155,8 +160,8 @@ struct ctest {
     void __FNAME(sname, tname)(struct sname##_data* data)
 
 
-void CTEST_LOG(char *fmt, ...);
-void CTEST_ERR(char *fmt, ...);  // doesn't return
+void CTEST_LOG(const char* fmt, ...);
+void CTEST_ERR(const char* fmt, ...);  // doesn't return
 
 #define CTEST(sname, tname) __CTEST_INTERNAL(sname, tname, 0)
 #define CTEST_SKIP(sname, tname) __CTEST_INTERNAL(sname, tname, 1)
@@ -184,17 +189,23 @@ void __ctest_addTest(struct ctest *);
 void assert_str(const char* exp, const char* real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
 
-void assert_data(const unsigned char* exp, int expsize,
-                 const unsigned char* real, int realsize,
+void assert_data(const unsigned char* exp, size_t expsize,
+                 const unsigned char* real, size_t realsize,
                  const char* caller, int line);
 #define ASSERT_DATA(exp, expsize, real, realsize) \
     assert_data(exp, expsize, real, realsize, __FILE__, __LINE__)
 
-void assert_equal(long exp, long real, const char* caller, int line);
+void assert_equal(intmax_t exp, intmax_t real, const char* caller, int line);
 #define ASSERT_EQUAL(exp, real) assert_equal(exp, real, __FILE__, __LINE__)
 
-void assert_not_equal(long exp, long real, const char* caller, int line);
+void assert_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line);
+#define ASSERT_EQUAL_U(exp, real) assert_equal_u(exp, real, __FILE__, __LINE__)
+
+void assert_not_equal(intmax_t exp, intmax_t real, const char* caller, int line);
 #define ASSERT_NOT_EQUAL(exp, real) assert_not_equal(exp, real, __FILE__, __LINE__)
+
+void assert_not_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line);
+#define ASSERT_NOT_EQUAL_U(exp, real) assert_not_equal_u(exp, real, __FILE__, __LINE__)
 
 void assert_null(void* real, const char* caller, int line);
 #define ASSERT_NULL(real) assert_null((void*)real, __FILE__, __LINE__)
@@ -234,6 +245,13 @@ void assert_fail(const char* caller, int line);
 # define __CTEST_LONGJMP(_var, _err)    longjmp(_var, _err)
 #endif // __CTEST_NO_JMP
 
+void assert_dbl_near(double exp, double real, double tol, const char* caller, int line);
+#define ASSERT_DBL_NEAR(exp, real) assert_dbl_near(exp, real, 1e-4, __FILE__, __LINE__)
+#define ASSERT_DBL_NEAR_TOL(exp, real, tol) assert_dbl_near(exp, real, tol, __FILE__, __LINE__)
+
+void assert_dbl_far(double exp, double real, double tol, const char* caller, int line);
+#define ASSERT_DBL_FAR(exp, real) assert_dbl_far(exp, real, 1e-4, __FILE__, __LINE__)
+#define ASSERT_DBL_FAR_TOL(exp, real, tol) assert_dbl_far(exp, real, tol, __FILE__, __LINE__)
 
 #ifdef CTEST_MAIN
 
@@ -247,17 +265,13 @@ void assert_fail(const char* caller, int line);
 
 #ifndef __CTEST_NO_TIME
 #include <sys/time.h>
-#include <inttypes.h>
 #endif
 #include <stdint.h>
 
-
-#ifndef __CTEST_NO_TTY
 #ifdef __CTEST_MSVC
 #include <io.h>
 #else
 #include <unistd.h>
-#endif
 #endif
 
 #include <stdlib.h>
@@ -265,8 +279,6 @@ void assert_fail(const char* caller, int line);
 #ifdef __CTEST_APPLE
 #include <dlfcn.h>
 #endif
-
-//#define COLOR_OK
 
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
@@ -305,7 +317,6 @@ __declspec(allocate(".ctest$z")) struct ctest * ctest_win_end;
 #endif
 
 static CTEST(suite, test) { }
-
 
 #define __CTEST_POINTER_NEXT(_test) (struct ctest **)((struct ctest **)(_test) + 2)
 #define __CTEST_POINTER_PREV(_test) (struct ctest **)((struct ctest **)(_test) - 2)
@@ -388,71 +399,62 @@ static void __ctest_linkTests()
 #endif
 #endif
 
-static void msg_start(const char* color, const char* title) {
-    int size;
-    if (color_output) {
-#ifndef __CTEST_MSVC
-        size = snprintf(ctest_errormsg, ctest_errorsize, "%s", color);
-#else
-	size = _snprintf_s(ctest_errormsg, ctest_errorsize, _TRUNCATE, "%s", color);
-#endif
-        ctest_errorsize -= size;
-        ctest_errormsg += size;
+inline static void vprint_errormsg(const char* const fmt, va_list ap) {
+	// (v)snprintf returns the number that would have been written
+    const int ret = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, ap);
+    if (ret < 0) {
+		ctest_errormsg[0] = 0x00;
+    } else {
+    	const size_t size = (size_t) ret;
+    	const size_t s = (ctest_errorsize <= size ? size -ctest_errorsize : size);
+    	// ctest_errorsize may overflow at this point
+		ctest_errorsize -= s;
+		ctest_errormsg += s;
     }
-#ifndef __CTEST_MSVC
-    size = snprintf(ctest_errormsg, ctest_errorsize, "  %s: ", title);
-#else
-    size = _snprintf_s(ctest_errormsg, ctest_errorsize, _TRUNCATE, "  %s: ", title);
-#endif
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+}
+
+inline static void print_errormsg(const char* const fmt, ...) {
+    va_list argp;
+    va_start(argp, fmt);
+    vprint_errormsg(fmt, argp);
+    va_end(argp);
+}
+
+static void msg_start(const char* color, const char* title) {
+    if (color_output) {
+    	print_errormsg("%s", color);
+    }
+    print_errormsg("  %s: ", title);
 }
 
 static void msg_end() {
-    int size;
     if (color_output) {
-#ifndef __CTEST_MSVC
-        size = snprintf(ctest_errormsg, ctest_errorsize, ANSI_NORMAL);
-#else
-	size = snprintf(ctest_errormsg, ctest_errorsize, _TRUNCATE, ANSI_NORMAL);
-#endif
-        ctest_errorsize -= size;
-        ctest_errormsg += size;
+    	print_errormsg(ANSI_NORMAL);
     }
-#ifndef __CTEST_MSVC
-    size = snprintf(ctest_errormsg, ctest_errorsize, "\n");
-#else
-    size = snprintf(ctest_errormsg, ctest_errorsize, _TRUNCATE, "\n");
-#endif
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+    print_errormsg("\n");
 }
 
-void CTEST_LOG(char *fmt, ...)
+void CTEST_LOG(const char* fmt, ...)
 {
     va_list argp;
     int size;
     msg_start(ANSI_BLUE, "LOG");
 
     va_start(argp, fmt);
-    size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+    vprint_errormsg(fmt, argp);
     va_end(argp);
 
     msg_end();
 }
 
-void CTEST_ERR(char *fmt, ...)
+void CTEST_ERR(const char* fmt, ...)
 {
     va_list argp;
     int size;
     msg_start(ANSI_YELLOW, "ERR");
 
     va_start(argp, fmt);
-    size = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, argp);
-    ctest_errorsize -= size;
-    ctest_errormsg += size;
+    vprint_errormsg(fmt, argp);
     va_end(argp);
 
     msg_end();
@@ -467,30 +469,66 @@ void assert_str(const char* exp, const char*  real, const char* caller, int line
     }
 }
 
-void assert_data(const unsigned char* exp, int expsize,
-                 const unsigned char* real, int realsize,
+void assert_data(const unsigned char* exp, size_t expsize,
+                 const unsigned char* real, size_t realsize,
                  const char* caller, int line) {
-    int i;
+    size_t i;
     if (expsize != realsize) {
-        CTEST_ERR("%s:%d  expected %d bytes, got %d", caller, line, expsize, realsize);
+        CTEST_ERR("%s:%d  expected %" PRIuMAX " bytes, got %" PRIuMAX, caller, line, (uintmax_t) expsize, (uintmax_t) realsize);
     }
     for (i=0; i<expsize; i++) {
         if (exp[i] != real[i]) {
-            CTEST_ERR("%s:%d expected 0x%02x at offset %d got 0x%02x",
-                caller, line, exp[i], i, real[i]);
+            CTEST_ERR("%s:%d expected 0x%02x at offset %" PRIuMAX " got 0x%02x",
+                caller, line, exp[i], (uintmax_t) i, real[i]);
         }
     }
 }
 
-void assert_equal(long exp, long real, const char* caller, int line) {
+void assert_equal(intmax_t exp, intmax_t real, const char* caller, int line) {
     if (exp != real) {
-        CTEST_ERR("%s:%d  expected %ld, got %ld", caller, line, exp, real);
+        CTEST_ERR("%s:%d  expected %" PRIdMAX ", got %" PRIdMAX, caller, line, exp, real);
     }
 }
 
-void assert_not_equal(long exp, long real, const char* caller, int line) {
+void assert_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line) {
+    if (exp != real) {
+        CTEST_ERR("%s:%d  expected %" PRIuMAX ", got %" PRIuMAX, caller, line, exp, real);
+    }
+}
+
+void assert_not_equal(intmax_t exp, intmax_t real, const char* caller, int line) {
     if ((exp) == (real)) {
-        CTEST_ERR("%s:%d  should not be %ld", caller, line, real);
+        CTEST_ERR("%s:%d  should not be %" PRIdMAX, caller, line, real);
+    }
+}
+
+void assert_not_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line) {
+    if ((exp) == (real)) {
+        CTEST_ERR("%s:%d  should not be %" PRIuMAX, caller, line, real);
+    }
+}
+
+void assert_dbl_near(double exp, double real, double tol, const char* caller, int line) {
+    double diff = exp - real;
+    double absdiff = diff;
+    /* avoid using fabs and linking with a math lib */
+    if(diff < 0) {
+      absdiff *= -1;
+    }
+    if (absdiff > tol) {
+        CTEST_ERR("%s:%d  expected %0.3e, got %0.3e (diff %0.3e, tol %0.3e)", caller, line, exp, real, diff, tol);
+    }
+}
+
+void assert_dbl_far(double exp, double real, double tol, const char* caller, int line) {
+    double diff = exp - real;
+    double absdiff = diff;
+    /* avoid using fabs and linking with a math lib */
+    if(diff < 0) {
+      absdiff *= -1;
+    }
+    if (absdiff <= tol) {
+        CTEST_ERR("%s:%d  expected %0.3e, got %0.3e (diff %0.3e, tol %0.3e)", caller, line, exp, real, diff, tol);
     }
 }
 
@@ -524,6 +562,7 @@ void assert_fail(const char* caller, int line) {
 
 
 static int suite_all(struct ctest* t) {
+    (void) t; // fix unused parameter warning
     return 1;
 }
 
@@ -543,9 +582,9 @@ static int suite_test_filter(struct ctest* t) {
 static uint64_t getCurrentTime() {
     struct timeval now;
     gettimeofday(&now, NULL);
-    uint64_t now64 = now.tv_sec;
+    uint64_t now64 = (uint64_t) now.tv_sec;
     now64 *= 1000000;
-    now64 += (now.tv_usec);
+    now64 += ((uint64_t) now.tv_usec);
     return now64;
 }
 #endif
@@ -619,36 +658,15 @@ int ctest_main(int argc, const char *argv[])
         filter = suite_test_filter;
     }
 
-#ifndef __CTEST_NO_TTY
-    color_output = isatty(1);
-#endif
-
-#ifdef __CTEST_MSVC
+#ifdef CTEST_NO_COLORS
     color_output = 0;
+#else
+    color_output = isatty(1);
 #endif
 
 #ifndef __CTEST_NO_TIME
     uint64_t t1 = getCurrentTime();
 #endif
-    /*
-    struct ctest* ctest_begin = &__TNAME(suite, test);
-    struct ctest* ctest_end = &__TNAME(suite, test);
-
-
-    // find begin and end of section by comparing magics
-    while (1) {
-        struct ctest* t = ctest_begin-1;
-        if (t->magic != __CTEST_MAGIC) break;
-        ctest_begin--;
-    }
-    while (1) {
-        struct ctest* t = ctest_end+1;
-        if (t->magic != __CTEST_MAGIC) break;
-        ctest_end++;
-    }
-    ctest_end++;    // end after last one
-    */
-
 
 #ifndef CTEST_ADD_TESTS_MANUALLY
     __ctest_linkTests();
@@ -676,10 +694,10 @@ int ctest_main(int argc, const char *argv[])
                 if (result == 0) {
 #ifdef __CTEST_APPLE
                     if (!test->setup) {
-                        test->setup = find_symbol(test, "setup");
+                        test->setup = (SetupFunc) find_symbol(test, "setup");
                     }
                     if (!test->teardown) {
-                        test->teardown = find_symbol(test, "teardown");
+                        test->teardown = (TearDownFunc) find_symbol(test, "teardown");
                     }
 #endif
 
@@ -687,10 +705,10 @@ int ctest_main(int argc, const char *argv[])
                     if (test->data)
                       ((RunWithDataFunc)test->run)(test->data);
                     else
-                      test->run();
+                        test->run();
                     if (test->teardown) test->teardown(test->data);
                     // if we got here it's ok
-#ifdef COLOR_OK
+#ifdef CTEST_COLOR_OK
                     color_print(ANSI_BGREEN, "[OK]");
 #else
                     printf("[OK]\n");

@@ -1,9 +1,6 @@
 UNAME=$(shell uname)
 
 CCFLAGS=-Wall -Wextra -Wno-unused-parameter -O3
-ifdef CTEST_COLOR_OK
-CCFLAGS+=-DCOLOR_OK
-endif
 
 ifeq ($(UNAME), Darwin)
 LDFLAGS=-Wl,-flat_namespace,-undefined,dynamic_lookup
