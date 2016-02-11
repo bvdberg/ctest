@@ -437,7 +437,6 @@ static void msg_end() {
 void CTEST_LOG(const char* fmt, ...)
 {
     va_list argp;
-    int size;
     msg_start(ANSI_BLUE, "LOG");
 
     va_start(argp, fmt);
@@ -450,7 +449,6 @@ void CTEST_LOG(const char* fmt, ...)
 void CTEST_ERR(const char* fmt, ...)
 {
     va_list argp;
-    int size;
     msg_start(ANSI_YELLOW, "ERR");
 
     va_start(argp, fmt);
