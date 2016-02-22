@@ -108,6 +108,10 @@ CTEST(ctest, test_assert_not_equal) {
     ASSERT_NOT_EQUAL(123, 123);
 }
 
+CTEST(ctest, test_assert_interval) {
+    ASSERT_INTERVAL(10, 20, 15);
+    ASSERT_INTERVAL(1000, 2000, 3000);
+}
 
 CTEST(ctest, test_assert_null) {
     ASSERT_NULL(NULL);
