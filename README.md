@@ -121,3 +121,14 @@ disabled also when stdout is piped to file).
 The CTEST_COLOR_OK will turn the [OK] messages green if enabled. Some users
 only want failing tests to draw attention and can leave this out then.
 
+#### Configuration macros
+
+ * CTEST_ADD_TESTS_MANUALLY
+
+   If defined, test should be added manually using macros:
+      CTEST_ADD(suite, test);    // for CTEST
+      CTEST_ADD2(suite, test)    // for CTEST2
+
+ * CTEST_NO_JMP
+
+   If longjmp() is not available, please define.

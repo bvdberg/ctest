@@ -1,10 +1,18 @@
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include "ctest.h"
 
+#if defined(_WIN32) && defined(_MSC_VER)
+#define __func__ __FUNCTION__
+#endif
+
 // basic test without setup/teardown
 CTEST(suite1, test1) {
+#ifndef _MSC_VER
     usleep(2000);
+#endif
 }
 
 // there are many different ASSERT macro's (see ctest.h)
@@ -53,8 +61,10 @@ CTEST2(memtest, test2) {
     ASSERT_FAIL();
 }
 
-
+#ifndef _MSC_VER
+//The following test cannot build on MSVC
 CTEST_DATA(fail) {};
+
 
 // Asserts can also be used in setup/teardown functions
 CTEST_SETUP(fail) {
@@ -62,7 +72,6 @@ CTEST_SETUP(fail) {
 }
 
 CTEST2(fail, test1) {}
-
 
 
 CTEST_DATA(weaklinkage) {
@@ -90,7 +99,7 @@ CTEST_TEARDOWN(nosetup) {
 CTEST2(nosetup, test1) {
     CTEST_LOG("%s()", __func__);
 }
-
+#endif
 
 // more ASSERT examples
 CTEST(ctest, test_assert_str) {
