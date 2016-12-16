@@ -1,10 +1,16 @@
+#define _POSIX_C_SOURCE 200809L
 #include <unistd.h>
+
 #include <stdlib.h>
+#include <time.h>
 #include "ctest.h"
 
 // basic test without setup/teardown
 CTEST(suite1, test1) {
-    usleep(2000);
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 2000000;
+    nanosleep(&ts, NULL);
 }
 
 // there are many different ASSERT macro's (see ctest.h)
@@ -49,7 +55,7 @@ CTEST2_SKIP(memtest, test3) {
 
 CTEST2(memtest, test2) {
     CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
-    
+
     ASSERT_FAIL();
 }
 

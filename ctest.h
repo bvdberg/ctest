@@ -16,6 +16,10 @@
 #ifndef CTEST_H
 #define CTEST_H
 
+#if !(defined (_GNU_SOURCE) || defined (_BSD_SOURCE) || defined(_POSIX_C_SOURCE))
+#undef CTEST_SEGFAULT
+#endif
+
 #if defined _WIN32 || defined __CYGWIN__
 #ifndef WIN32
 #define WIN32
@@ -107,6 +111,14 @@ void CTEST_ERR(const char* fmt, ...);  // doesn't return
 #define CTEST2(sname, tname) __CTEST2_INTERNAL(sname, tname, 0)
 #define CTEST2_SKIP(sname, tname) __CTEST2_INTERNAL(sname, tname, 1)
 
+void assert_str_ends_with(const char* exp, const char* real, const char* caller, int line);
+#define ASSERT_STR_ENDS_WITH(exp, real) assert_str_ends_with(exp, real, __FILE__, __LINE__)
+
+void assert_str_begins_with(const char* exp, const char* real, const char* caller, int line);
+#define ASSERT_STR_BEGINS_WITH(exp, real) assert_str_begins_with(exp, real, __FILE__, __LINE__)
+
+void assert_str_contains(const char* exp, const char* real, const char* caller, int line);
+#define ASSERT_STR_CONTAINS(exp, real) assert_str_contains(exp, real, __FILE__, __LINE__)
 
 void assert_str(const char* exp, const char* real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
@@ -260,10 +272,26 @@ void CTEST_ERR(const char* fmt, ...)
     longjmp(ctest_err, 1);
 }
 
+void assert_str_ends_with(const char* exp, const char* real, const char* caller, int line) {
+    if (exp && real && strcmp(exp, real+(strlen(real)-strlen(exp))) != 0) {
+        CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
+    }
+}
+
+void assert_str_begins_with(const char* exp, const char* real, const char* caller, int line) {
+    if (exp && real && strncmp(exp, real, strlen(exp)) != 0) {
+        CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
+    }
+}
+
+void assert_str_contains(const char* exp, const char* real, const char* caller, int line) {
+    if (exp && real && strstr(exp, real) != 0) {
+        CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
+    }
+}
+
 void assert_str(const char* exp, const char*  real, const char* caller, int line) {
-    if ((exp == NULL && real != NULL) ||
-        (exp != NULL && real == NULL) ||
-        (exp && real && strcmp(exp, real) != 0)) {
+    if (exp && real && strcmp(exp, real) != 0) {
         CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
     }
 }
@@ -391,7 +419,7 @@ static void color_print(const char* color, const char* text) {
         printf("%s\n", text);
 }
 
-#ifdef __APPLE__
+#if defined (__APPLE__) && !defined (_POSIX_C_SOURCE)
 static void *find_symbol(struct ctest *test, const char *fname)
 {
     size_t len = strlen(test->ssname) + 1 + strlen(fname);
@@ -416,7 +444,11 @@ static void *find_symbol(struct ctest *test, const char *fname)
 static void sighandler(int signum)
 {
     char msg[128];
+#if defined _BSD_SOURCE || defined _GNU_SOURCE
     sprintf(msg, "[SIGNAL %d: %s]", signum, sys_siglist[signum]);
+#else
+    sprintf(msg, "[SIGNAL %d]", signum);
+#endif
     color_print(ANSI_BRED, msg);
     fflush(stdout);
 
@@ -486,7 +518,7 @@ int ctest_main(int argc, const char *argv[])
             } else {
                 int result = setjmp(ctest_err);
                 if (result == 0) {
-#ifdef __APPLE__
+#if defined (__APPLE__) && !defined (_POSIX_C_SOURCE)
                     if (!test->setup) {
                         test->setup = (SetupFunc) find_symbol(test, "setup");
                     }

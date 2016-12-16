@@ -1,9 +1,13 @@
 UNAME=$(shell uname)
 
-CCFLAGS=-Wall -Wextra -Wno-unused-parameter -O3
+CC=gcc
+LD=gcc
+
+CCFLAGS=-std=c99 -Werror -Wall -Wextra -Wformat=2 -Wno-format-nonliteral -Wno-unused-parameter -O3
 
 ifeq ($(UNAME), Darwin)
-LDFLAGS=-Wl,-flat_namespace,-undefined,dynamic_lookup
+CC=clang
+LD=clang
 endif
 
 all: test
@@ -11,10 +15,10 @@ all: test
 remake: clean all
 
 %.o: %.c ctest.h
-	gcc $(CCFLAGS) -c -o $@ $<
+	$(CC) $(CCFLAGS) -c -o $@ $<
 
 test: main.o ctest.h mytests.o
-	gcc $(LDFLAGS) main.o mytests.o -o test
+	$(LD) $(LDFLAGS) main.o mytests.o -o test
 
 clean:
 	rm -f test *.o
