@@ -47,26 +47,26 @@ struct ctest {
     unsigned int magic;
 };
 
-#define __FNAME(sname, tname) __ctest_##sname##_##tname##_run
-#define __TNAME(sname, tname) __ctest_##sname##_##tname
+#define CTEST_IMPL_FNAME(sname, tname) ctest_##sname##_##tname##_run
+#define CTEST_IMPL_TNAME(sname, tname) ctest_##sname##_##tname
 
-#define __CTEST_MAGIC (0xdeadbeef)
+#define CTEST_IMPL_MAGIC (0xdeadbeef)
 #ifdef __APPLE__
-#define __Test_Section __attribute__ ((used, section ("__DATA, .ctest")))
+#define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest")))
 #else
-#define __Test_Section __attribute__ ((used, section (".ctest")))
+#define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest")))
 #endif
 
-#define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
-    static struct ctest __TNAME(sname, tname) __Test_Section = { \
+#define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
+    static struct ctest CTEST_IMPL_TNAME(sname, tname) CTEST_IMPL_SECTION = { \
         .ssname=#sname, \
         .ttname=#tname, \
-        .run = __FNAME(sname, tname), \
-        .skip = _skip, \
-        .data = __data, \
-        .setup = (SetupFunc)__setup,					\
-        .teardown = (TearDownFunc)__teardown,				\
-        .magic = __CTEST_MAGIC };
+        .run = CTEST_IMPL_FNAME(sname, tname), \
+        .skip = tskip, \
+        .data = tdata, \
+        .setup = (SetupFunc) tsetup, \
+        .teardown = (TearDownFunc) tteardown, \
+        .magic = CTEST_IMPL_MAGIC }
 
 #define CTEST_DATA(sname) struct sname##_data
 
@@ -76,10 +76,10 @@ struct ctest {
 #define CTEST_TEARDOWN(sname) \
     void WEAK sname##_teardown(struct sname##_data* data)
 
-#define __CTEST_INTERNAL(sname, tname, _skip) \
-    void __FNAME(sname, tname)(); \
-    __CTEST_STRUCT(sname, tname, _skip, NULL, NULL, NULL) \
-    void __FNAME(sname, tname)()
+#define CTEST_IMPL_CTEST(sname, tname, tskip) \
+    void CTEST_IMPL_FNAME(sname, tname)(); \
+    CTEST_IMPL_STRUCT(sname, tname, tskip, NULL, NULL, NULL); \
+    void CTEST_IMPL_FNAME(sname, tname)()
 
 #ifdef __APPLE__
 #define SETUP_FNAME(sname) NULL
@@ -89,23 +89,23 @@ struct ctest {
 #define TEARDOWN_FNAME(sname) sname##_teardown
 #endif
 
-#define __CTEST2_INTERNAL(sname, tname, _skip) \
-    static struct sname##_data  __ctest_##sname##_data; \
+#define CTEST_IMPL_CTEST2(sname, tname, tskip) \
+    static struct sname##_data ctest_##sname##_data; \
     CTEST_SETUP(sname); \
     CTEST_TEARDOWN(sname); \
-    void __FNAME(sname, tname)(struct sname##_data* data); \
-    __CTEST_STRUCT(sname, tname, _skip, &__ctest_##sname##_data, SETUP_FNAME(sname), TEARDOWN_FNAME(sname)) \
-    void __FNAME(sname, tname)(struct sname##_data* data)
+    void CTEST_IMPL_FNAME(sname, tname)(struct sname##_data* data); \
+    CTEST_IMPL_STRUCT(sname, tname, tskip, &ctest_##sname##_data, SETUP_FNAME(sname), TEARDOWN_FNAME(sname)); \
+    void CTEST_IMPL_FNAME(sname, tname)(struct sname##_data* data)
 
 
 void CTEST_LOG(const char* fmt, ...);
 void CTEST_ERR(const char* fmt, ...);  // doesn't return
 
-#define CTEST(sname, tname) __CTEST_INTERNAL(sname, tname, 0)
-#define CTEST_SKIP(sname, tname) __CTEST_INTERNAL(sname, tname, 1)
+#define CTEST(sname, tname) CTEST_IMPL_CTEST(sname, tname, 0)
+#define CTEST_SKIP(sname, tname) CTEST_IMPL_CTEST(sname, tname, 1)
 
-#define CTEST2(sname, tname) __CTEST2_INTERNAL(sname, tname, 0)
-#define CTEST2_SKIP(sname, tname) __CTEST2_INTERNAL(sname, tname, 1)
+#define CTEST2(sname, tname) CTEST_IMPL_CTEST2(sname, tname, 0)
+#define CTEST2_SKIP(sname, tname) CTEST_IMPL_CTEST2(sname, tname, 1)
 
 
 void assert_str(const char* exp, const char* real, const char* caller, int line);
@@ -451,29 +451,29 @@ int ctest_main(int argc, const char *argv[])
 #endif
     uint64_t t1 = getCurrentTime();
 
-    struct ctest* ctest_begin = &__TNAME(suite, test);
-    struct ctest* ctest_end = &__TNAME(suite, test);
+    struct ctest* ctest_begin = &CTEST_IMPL_TNAME(suite, test);
+    struct ctest* ctest_end = &CTEST_IMPL_TNAME(suite, test);
     // find begin and end of section by comparing magics
     while (1) {
         struct ctest* t = ctest_begin-1;
-        if (t->magic != __CTEST_MAGIC) break;
+        if (t->magic != CTEST_IMPL_MAGIC) break;
         ctest_begin--;
     }
     while (1) {
         struct ctest* t = ctest_end+1;
-        if (t->magic != __CTEST_MAGIC) break;
+        if (t->magic != CTEST_IMPL_MAGIC) break;
         ctest_end++;
     }
     ctest_end++;    // end after last one
 
     static struct ctest* test;
     for (test = ctest_begin; test != ctest_end; test++) {
-        if (test == &__TNAME(suite, test)) continue;
+        if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) total++;
     }
 
     for (test = ctest_begin; test != ctest_end; test++) {
-        if (test == &__TNAME(suite, test)) continue;
+        if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) {
             ctest_errorbuffer[0] = 0;
             ctest_errorsize = MSG_SIZE-1;
