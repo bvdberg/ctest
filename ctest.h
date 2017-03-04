@@ -23,16 +23,16 @@
 #endif
 
 #ifndef WIN32
-#define WEAK __attribute__ ((weak))
+#define CTEST_IMPL_WEAK __attribute__ ((weak))
 #else
-#define WEAK
+#define CTEST_IMPL_WEAK
 #endif
 
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
 #include <stddef.h> /* size_t */
 
-typedef void (*SetupFunc)(void*);
-typedef void (*TearDownFunc)(void*);
+typedef void (*ctest_setup_func)(void*);
+typedef void (*ctest_teardown_func)(void*);
 
 struct ctest {
     const char* ssname;  // suite name
@@ -41,14 +41,15 @@ struct ctest {
     int skip;
 
     void* data;
-    SetupFunc setup;
-    TearDownFunc teardown;
+    ctest_setup_func setup;
+    ctest_teardown_func teardown;
 
     unsigned int magic;
 };
 
-#define CTEST_IMPL_FNAME(sname, tname) ctest_##sname##_##tname##_run
-#define CTEST_IMPL_TNAME(sname, tname) ctest_##sname##_##tname
+#define CTEST_IMPL_NAME(name) ctest_##name
+#define CTEST_IMPL_FNAME(sname, tname) CTEST_IMPL_NAME(sname##_##tname##_run)
+#define CTEST_IMPL_TNAME(sname, tname) CTEST_IMPL_NAME(sname##_##tname)
 
 #define CTEST_IMPL_MAGIC (0xdeadbeef)
 #ifdef __APPLE__
@@ -64,17 +65,17 @@ struct ctest {
         .run = CTEST_IMPL_FNAME(sname, tname), \
         .skip = tskip, \
         .data = tdata, \
-        .setup = (SetupFunc) tsetup, \
-        .teardown = (TearDownFunc) tteardown, \
+        .setup = (ctest_setup_func) tsetup, \
+        .teardown = (ctest_teardown_func) tteardown, \
         .magic = CTEST_IMPL_MAGIC }
 
-#define CTEST_DATA(sname) struct sname##_data
+#define CTEST_DATA(sname) struct CTEST_IMPL_NAME(sname##_data)
 
 #define CTEST_SETUP(sname) \
-    void WEAK sname##_setup(struct sname##_data* data)
+    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_setup)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 #define CTEST_TEARDOWN(sname) \
-    void WEAK sname##_teardown(struct sname##_data* data)
+    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_teardown)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 #define CTEST_IMPL_CTEST(sname, tname, tskip) \
     void CTEST_IMPL_FNAME(sname, tname)(); \
@@ -82,20 +83,20 @@ struct ctest {
     void CTEST_IMPL_FNAME(sname, tname)()
 
 #ifdef __APPLE__
-#define SETUP_FNAME(sname) NULL
-#define TEARDOWN_FNAME(sname) NULL
+#define CTEST_IMPL_SETUP_FNAME(sname) NULL
+#define CTEST_IMPL_TEARDOWN_FNAME(sname) NULL
 #else
-#define SETUP_FNAME(sname) sname##_setup
-#define TEARDOWN_FNAME(sname) sname##_teardown
+#define CTEST_IMPL_SETUP_FNAME(sname) CTEST_IMPL_NAME(sname##_setup)
+#define CTEST_IMPL_TEARDOWN_FNAME(sname) CTEST_IMPL_NAME(sname##_teardown)
 #endif
 
 #define CTEST_IMPL_CTEST2(sname, tname, tskip) \
-    static struct sname##_data ctest_##sname##_data; \
+    static struct CTEST_IMPL_NAME(sname##_data) CTEST_IMPL_NAME(sname##_data); \
     CTEST_SETUP(sname); \
     CTEST_TEARDOWN(sname); \
-    void CTEST_IMPL_FNAME(sname, tname)(struct sname##_data* data); \
-    CTEST_IMPL_STRUCT(sname, tname, tskip, &ctest_##sname##_data, SETUP_FNAME(sname), TEARDOWN_FNAME(sname)); \
-    void CTEST_IMPL_FNAME(sname, tname)(struct sname##_data* data)
+    void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data); \
+    CTEST_IMPL_STRUCT(sname, tname, tskip, &CTEST_IMPL_NAME(sname##_data), CTEST_IMPL_SETUP_FNAME(sname), CTEST_IMPL_TEARDOWN_FNAME(sname)); \
+    void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 
 void CTEST_LOG(const char* fmt, ...);
@@ -178,7 +179,7 @@ static jmp_buf ctest_err;
 static int color_output = 1;
 static const char* suite_name;
 
-typedef int (*filter_func)(struct ctest*);
+typedef int (*ctest_filter_func)(struct ctest*);
 
 #define ANSI_BLACK    "\033[0;30m"
 #define ANSI_RED      "\033[0;31m"
@@ -394,10 +395,11 @@ static void color_print(const char* color, const char* text) {
 #ifdef __APPLE__
 static void *find_symbol(struct ctest *test, const char *fname)
 {
-    size_t len = strlen(test->ssname) + 1 + strlen(fname);
+    const char* const symbol_prefix = "ctest_";
+    size_t len = strlen(symbol_prefix) + strlen(test->ssname) + 1 + strlen(fname);
     char *symbol_name = (char *) malloc(len + 1);
     memset(symbol_name, 0, len + 1);
-    snprintf(symbol_name, len + 1, "%s_%s", test->ssname, fname);
+    snprintf(symbol_name, len + 1, "%s%s_%s", symbol_prefix, test->ssname, fname);
 
     //fprintf(stderr, ">>>> dlsym: loading %s\n", symbol_name);
     void *symbol = dlsym(RTLD_DEFAULT, symbol_name);
@@ -434,7 +436,7 @@ int ctest_main(int argc, const char *argv[])
     static int num_fail = 0;
     static int num_skip = 0;
     static int index = 1;
-    static filter_func filter = suite_all;
+    static ctest_filter_func filter = suite_all;
 
 #ifdef CTEST_SEGFAULT
     signal(SIGSEGV, sighandler);
@@ -488,10 +490,10 @@ int ctest_main(int argc, const char *argv[])
                 if (result == 0) {
 #ifdef __APPLE__
                     if (!test->setup) {
-                        test->setup = (SetupFunc) find_symbol(test, "setup");
+                        test->setup = (ctest_setup_func) find_symbol(test, "setup");
                     }
                     if (!test->teardown) {
-                        test->teardown = (TearDownFunc) find_symbol(test, "teardown");
+                        test->teardown = (ctest_teardown_func) find_symbol(test, "teardown");
                     }
 #endif
 
