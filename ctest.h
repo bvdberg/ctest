@@ -44,11 +44,12 @@ struct ctest {
     const char* ssname;  // suite name
     const char* ttname;  // test name
     void (*run)();
-    int skip;
 
     void* data;
     ctest_setup_func setup;
     ctest_teardown_func teardown;
+
+    int skip;
 
     unsigned int magic;
 };
@@ -59,9 +60,9 @@ struct ctest {
 
 #define CTEST_IMPL_MAGIC (0xdeadbeef)
 #ifdef __APPLE__
-#define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest")))
+#define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(1)))
 #else
-#define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest")))
+#define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
 #endif
 
 #define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
@@ -69,10 +70,10 @@ struct ctest {
         .ssname=#sname, \
         .ttname=#tname, \
         .run = CTEST_IMPL_FNAME(sname, tname), \
-        .skip = tskip, \
         .data = tdata, \
         .setup = (ctest_setup_func) tsetup, \
         .teardown = (ctest_teardown_func) tteardown, \
+        .skip = tskip, \
         .magic = CTEST_IMPL_MAGIC }
 
 #define CTEST_DATA(sname) struct CTEST_IMPL_NAME(sname##_data)
