@@ -28,6 +28,12 @@
 #define CTEST_IMPL_WEAK
 #endif
 
+#ifdef __GNUC__
+#define CTEST_IMPL_FORMAT_PRINTF(a, b) __attribute__ ((format(printf, a, b)))
+#else
+#define CTEST_IMPL_FORMAT_PRINTF(a, b)
+#endif
+
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
 #include <stddef.h> /* size_t */
 
@@ -101,8 +107,8 @@ struct ctest {
     static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 
-void CTEST_LOG(const char* fmt, ...);
-void CTEST_ERR(const char* fmt, ...);  // doesn't return
+void CTEST_LOG(const char* fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);
+void CTEST_ERR(const char* fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);  // doesn't return
 
 #define CTEST(sname, tname) CTEST_IMPL_CTEST(sname, tname, 0)
 #define CTEST_SKIP(sname, tname) CTEST_IMPL_CTEST(sname, tname, 1)
@@ -202,6 +208,9 @@ typedef int (*ctest_filter_func)(struct ctest*);
 #define ANSI_NORMAL   "\033[0m"
 
 CTEST(suite, test) { }
+
+inline static void vprint_errormsg(const char* const fmt, va_list ap) CTEST_IMPL_FORMAT_PRINTF(1, 0);
+inline static void print_errormsg(const char* const fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);
 
 inline static void vprint_errormsg(const char* const fmt, va_list ap) {
 	// (v)snprintf returns the number that would have been written

@@ -28,19 +28,19 @@ CTEST_DATA(memtest) {
 
 // Optional setup function for suite, called before every test in suite
 CTEST_SETUP(memtest) {
-    CTEST_LOG("%s() data=%p buffer=%p", __func__, data, data->buffer);
+    CTEST_LOG("%s() data=%p buffer=%p", __func__, (void*)data, (void*)data->buffer);
     data->buffer = (unsigned char*)malloc(1024);
 }
 
 // Optional teardown function for suite, called after every test in suite
 CTEST_TEARDOWN(memtest) {
-    CTEST_LOG("%s() data=%p buffer=%p", __func__, data, data->buffer);
+    CTEST_LOG("%s() data=%p buffer=%p", __func__, (void*)data, (void*)data->buffer);
     if (data->buffer) free(data->buffer);
 }
 
 // These tests are called with the struct* (named data) as argument
 CTEST2(memtest, test1) {
-    CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
+    CTEST_LOG("%s()  data=%p  buffer=%p", __func__, (void*)data, (void*)data->buffer);
 }
 
 CTEST2_SKIP(memtest, test3) {
@@ -49,7 +49,7 @@ CTEST2_SKIP(memtest, test3) {
 }
 
 CTEST2(memtest, test2) {
-    CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
+    CTEST_LOG("%s()  data=%p  buffer=%p", __func__, (void*)data, (void*)data->buffer);
     
     ASSERT_FAIL();
 }
