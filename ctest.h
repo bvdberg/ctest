@@ -260,6 +260,11 @@ void CTEST_LOG(const char* fmt, ...)
     msg_end();
 }
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
+#endif
+
 void CTEST_ERR(const char* fmt, ...)
 {
     va_list argp;
@@ -272,6 +277,10 @@ void CTEST_ERR(const char* fmt, ...)
     msg_end();
     longjmp(ctest_err, 1);
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line) {
     if ((exp == NULL && real != NULL) ||
