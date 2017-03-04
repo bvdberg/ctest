@@ -72,15 +72,17 @@ struct ctest {
 #define CTEST_DATA(sname) struct CTEST_IMPL_NAME(sname##_data)
 
 #define CTEST_SETUP(sname) \
+    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_setup)(struct CTEST_IMPL_NAME(sname##_data)* data); \
     void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_setup)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 #define CTEST_TEARDOWN(sname) \
+    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_teardown)(struct CTEST_IMPL_NAME(sname##_data)* data); \
     void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_teardown)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 #define CTEST_IMPL_CTEST(sname, tname, tskip) \
-    void CTEST_IMPL_FNAME(sname, tname)(); \
+    static void CTEST_IMPL_FNAME(sname, tname)(void); \
     CTEST_IMPL_STRUCT(sname, tname, tskip, NULL, NULL, NULL); \
-    void CTEST_IMPL_FNAME(sname, tname)()
+    static void CTEST_IMPL_FNAME(sname, tname)(void)
 
 #ifdef __APPLE__
 #define CTEST_IMPL_SETUP_FNAME(sname) NULL
@@ -94,9 +96,9 @@ struct ctest {
     static struct CTEST_IMPL_NAME(sname##_data) CTEST_IMPL_NAME(sname##_data); \
     CTEST_SETUP(sname); \
     CTEST_TEARDOWN(sname); \
-    void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data); \
+    static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data); \
     CTEST_IMPL_STRUCT(sname, tname, tskip, &CTEST_IMPL_NAME(sname##_data), CTEST_IMPL_SETUP_FNAME(sname), CTEST_IMPL_TEARDOWN_FNAME(sname)); \
-    void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data)
+    static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 
 void CTEST_LOG(const char* fmt, ...);
@@ -199,7 +201,7 @@ typedef int (*ctest_filter_func)(struct ctest*);
 #define ANSI_WHITE    "\033[01;37m"
 #define ANSI_NORMAL   "\033[0m"
 
-static CTEST(suite, test) { }
+CTEST(suite, test) { }
 
 inline static void vprint_errormsg(const char* const fmt, va_list ap) {
 	// (v)snprintf returns the number that would have been written
@@ -428,6 +430,8 @@ static void sighandler(int signum)
     kill(getpid(), signum);
 }
 #endif
+
+int ctest_main(int argc, const char *argv[]);
 
 int ctest_main(int argc, const char *argv[])
 {
