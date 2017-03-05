@@ -40,6 +40,11 @@
 typedef void (*ctest_setup_func)(void*);
 typedef void (*ctest_teardown_func)(void*);
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
+#endif
+
 struct ctest {
     const char* ssname;  // suite name
     const char* ttname;  // test name
@@ -53,6 +58,10 @@ struct ctest {
 
     unsigned int magic;
 };
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 #define CTEST_IMPL_NAME(name) ctest_##name
 #define CTEST_IMPL_FNAME(sname, tname) CTEST_IMPL_NAME(sname##_##tname##_run)
@@ -241,7 +250,7 @@ static void msg_start(const char* color, const char* title) {
     print_errormsg("  %s: ", title);
 }
 
-static void msg_end() {
+static void msg_end(void) {
     if (color_output) {
     	print_errormsg(ANSI_NORMAL);
     }
@@ -397,7 +406,7 @@ static int suite_filter(struct ctest* t) {
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
-static uint64_t getCurrentTime() {
+static uint64_t getCurrentTime(void) {
     struct timeval now;
     gettimeofday(&now, NULL);
     uint64_t now64 = (uint64_t) now.tv_sec;
