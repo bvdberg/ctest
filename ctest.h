@@ -23,89 +23,108 @@
 #endif
 
 #ifndef WIN32
-#define WEAK __attribute__ ((weak))
+#define CTEST_IMPL_WEAK __attribute__ ((weak))
 #else
-#define WEAK
+#define CTEST_IMPL_WEAK
+#endif
+
+#ifdef __GNUC__
+#define CTEST_IMPL_FORMAT_PRINTF(a, b) __attribute__ ((format(printf, a, b)))
+#else
+#define CTEST_IMPL_FORMAT_PRINTF(a, b)
 #endif
 
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
 #include <stddef.h> /* size_t */
 
-typedef void (*SetupFunc)(void*);
-typedef void (*TearDownFunc)(void*);
+typedef void (*ctest_setup_func)(void*);
+typedef void (*ctest_teardown_func)(void*);
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
+#endif
 
 struct ctest {
     const char* ssname;  // suite name
     const char* ttname;  // test name
     void (*run)();
-    int skip;
 
     void* data;
-    SetupFunc setup;
-    TearDownFunc teardown;
+    ctest_setup_func setup;
+    ctest_teardown_func teardown;
+
+    int skip;
 
     unsigned int magic;
 };
 
-#define __FNAME(sname, tname) __ctest_##sname##_##tname##_run
-#define __TNAME(sname, tname) __ctest_##sname##_##tname
-
-#define __CTEST_MAGIC (0xdeadbeef)
-#ifdef __APPLE__
-#define __Test_Section __attribute__ ((used, section ("__DATA, .ctest")))
-#else
-#define __Test_Section __attribute__ ((used, section (".ctest")))
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
 #endif
 
-#define __CTEST_STRUCT(sname, tname, _skip, __data, __setup, __teardown) \
-    static struct ctest __TNAME(sname, tname) __Test_Section = { \
+#define CTEST_IMPL_NAME(name) ctest_##name
+#define CTEST_IMPL_FNAME(sname, tname) CTEST_IMPL_NAME(sname##_##tname##_run)
+#define CTEST_IMPL_TNAME(sname, tname) CTEST_IMPL_NAME(sname##_##tname)
+
+#define CTEST_IMPL_MAGIC (0xdeadbeef)
+#ifdef __APPLE__
+#define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(1)))
+#else
+#define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
+#endif
+
+#define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
+    static struct ctest CTEST_IMPL_TNAME(sname, tname) CTEST_IMPL_SECTION = { \
         .ssname=#sname, \
         .ttname=#tname, \
-        .run = __FNAME(sname, tname), \
-        .skip = _skip, \
-        .data = __data, \
-        .setup = (SetupFunc)__setup,					\
-        .teardown = (TearDownFunc)__teardown,				\
-        .magic = __CTEST_MAGIC };
+        .run = CTEST_IMPL_FNAME(sname, tname), \
+        .data = tdata, \
+        .setup = (ctest_setup_func) tsetup, \
+        .teardown = (ctest_teardown_func) tteardown, \
+        .skip = tskip, \
+        .magic = CTEST_IMPL_MAGIC }
 
-#define CTEST_DATA(sname) struct sname##_data
+#define CTEST_DATA(sname) struct CTEST_IMPL_NAME(sname##_data)
 
 #define CTEST_SETUP(sname) \
-    void WEAK sname##_setup(struct sname##_data* data)
+    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_setup)(struct CTEST_IMPL_NAME(sname##_data)* data); \
+    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_setup)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 #define CTEST_TEARDOWN(sname) \
-    void WEAK sname##_teardown(struct sname##_data* data)
+    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_teardown)(struct CTEST_IMPL_NAME(sname##_data)* data); \
+    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_teardown)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
-#define __CTEST_INTERNAL(sname, tname, _skip) \
-    void __FNAME(sname, tname)(); \
-    __CTEST_STRUCT(sname, tname, _skip, NULL, NULL, NULL) \
-    void __FNAME(sname, tname)()
+#define CTEST_IMPL_CTEST(sname, tname, tskip) \
+    static void CTEST_IMPL_FNAME(sname, tname)(void); \
+    CTEST_IMPL_STRUCT(sname, tname, tskip, NULL, NULL, NULL); \
+    static void CTEST_IMPL_FNAME(sname, tname)(void)
 
 #ifdef __APPLE__
-#define SETUP_FNAME(sname) NULL
-#define TEARDOWN_FNAME(sname) NULL
+#define CTEST_IMPL_SETUP_FNAME(sname) NULL
+#define CTEST_IMPL_TEARDOWN_FNAME(sname) NULL
 #else
-#define SETUP_FNAME(sname) sname##_setup
-#define TEARDOWN_FNAME(sname) sname##_teardown
+#define CTEST_IMPL_SETUP_FNAME(sname) CTEST_IMPL_NAME(sname##_setup)
+#define CTEST_IMPL_TEARDOWN_FNAME(sname) CTEST_IMPL_NAME(sname##_teardown)
 #endif
 
-#define __CTEST2_INTERNAL(sname, tname, _skip) \
-    static struct sname##_data  __ctest_##sname##_data; \
+#define CTEST_IMPL_CTEST2(sname, tname, tskip) \
+    static struct CTEST_IMPL_NAME(sname##_data) CTEST_IMPL_NAME(sname##_data); \
     CTEST_SETUP(sname); \
     CTEST_TEARDOWN(sname); \
-    void __FNAME(sname, tname)(struct sname##_data* data); \
-    __CTEST_STRUCT(sname, tname, _skip, &__ctest_##sname##_data, SETUP_FNAME(sname), TEARDOWN_FNAME(sname)) \
-    void __FNAME(sname, tname)(struct sname##_data* data)
+    static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data); \
+    CTEST_IMPL_STRUCT(sname, tname, tskip, &CTEST_IMPL_NAME(sname##_data), CTEST_IMPL_SETUP_FNAME(sname), CTEST_IMPL_TEARDOWN_FNAME(sname)); \
+    static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 
-void CTEST_LOG(const char* fmt, ...);
-void CTEST_ERR(const char* fmt, ...);  // doesn't return
+void CTEST_LOG(const char* fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);
+void CTEST_ERR(const char* fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);  // doesn't return
 
-#define CTEST(sname, tname) __CTEST_INTERNAL(sname, tname, 0)
-#define CTEST_SKIP(sname, tname) __CTEST_INTERNAL(sname, tname, 1)
+#define CTEST(sname, tname) CTEST_IMPL_CTEST(sname, tname, 0)
+#define CTEST_SKIP(sname, tname) CTEST_IMPL_CTEST(sname, tname, 1)
 
-#define CTEST2(sname, tname) __CTEST2_INTERNAL(sname, tname, 0)
-#define CTEST2_SKIP(sname, tname) __CTEST2_INTERNAL(sname, tname, 1)
+#define CTEST2(sname, tname) CTEST_IMPL_CTEST2(sname, tname, 0)
+#define CTEST2_SKIP(sname, tname) CTEST_IMPL_CTEST2(sname, tname, 1)
 
 
 void assert_str(const char* exp, const char* real, const char* caller, int line);
@@ -178,7 +197,7 @@ static jmp_buf ctest_err;
 static int color_output = 1;
 static const char* suite_name;
 
-typedef int (*filter_func)(struct ctest*);
+typedef int (*ctest_filter_func)(struct ctest*);
 
 #define ANSI_BLACK    "\033[0;30m"
 #define ANSI_RED      "\033[0;31m"
@@ -198,9 +217,12 @@ typedef int (*filter_func)(struct ctest*);
 #define ANSI_WHITE    "\033[01;37m"
 #define ANSI_NORMAL   "\033[0m"
 
-static CTEST(suite, test) { }
+CTEST(suite, test) { }
 
-inline static void vprint_errormsg(const char* const fmt, va_list ap) {
+static void vprint_errormsg(const char* const fmt, va_list ap) CTEST_IMPL_FORMAT_PRINTF(1, 0);
+static void print_errormsg(const char* const fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);
+
+static void vprint_errormsg(const char* const fmt, va_list ap) {
 	// (v)snprintf returns the number that would have been written
     const int ret = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, ap);
     if (ret < 0) {
@@ -214,7 +236,7 @@ inline static void vprint_errormsg(const char* const fmt, va_list ap) {
     }
 }
 
-inline static void print_errormsg(const char* const fmt, ...) {
+static void print_errormsg(const char* const fmt, ...) {
     va_list argp;
     va_start(argp, fmt);
     vprint_errormsg(fmt, argp);
@@ -228,7 +250,7 @@ static void msg_start(const char* color, const char* title) {
     print_errormsg("  %s: ", title);
 }
 
-static void msg_end() {
+static void msg_end(void) {
     if (color_output) {
     	print_errormsg(ANSI_NORMAL);
     }
@@ -247,6 +269,11 @@ void CTEST_LOG(const char* fmt, ...)
     msg_end();
 }
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
+#endif
+
 void CTEST_ERR(const char* fmt, ...)
 {
     va_list argp;
@@ -259,6 +286,10 @@ void CTEST_ERR(const char* fmt, ...)
     msg_end();
     longjmp(ctest_err, 1);
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line) {
     if ((exp == NULL && real != NULL) ||
@@ -375,7 +406,7 @@ static int suite_filter(struct ctest* t) {
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
-static uint64_t getCurrentTime() {
+static uint64_t getCurrentTime(void) {
     struct timeval now;
     gettimeofday(&now, NULL);
     uint64_t now64 = (uint64_t) now.tv_sec;
@@ -394,10 +425,11 @@ static void color_print(const char* color, const char* text) {
 #ifdef __APPLE__
 static void *find_symbol(struct ctest *test, const char *fname)
 {
-    size_t len = strlen(test->ssname) + 1 + strlen(fname);
+    const char* const symbol_prefix = "ctest_";
+    size_t len = strlen(symbol_prefix) + strlen(test->ssname) + 1 + strlen(fname);
     char *symbol_name = (char *) malloc(len + 1);
     memset(symbol_name, 0, len + 1);
-    snprintf(symbol_name, len + 1, "%s_%s", test->ssname, fname);
+    snprintf(symbol_name, len + 1, "%s%s_%s", symbol_prefix, test->ssname, fname);
 
     //fprintf(stderr, ">>>> dlsym: loading %s\n", symbol_name);
     void *symbol = dlsym(RTLD_DEFAULT, symbol_name);
@@ -427,6 +459,8 @@ static void sighandler(int signum)
 }
 #endif
 
+int ctest_main(int argc, const char *argv[]);
+
 int ctest_main(int argc, const char *argv[])
 {
     static int total = 0;
@@ -434,7 +468,7 @@ int ctest_main(int argc, const char *argv[])
     static int num_fail = 0;
     static int num_skip = 0;
     static int index = 1;
-    static filter_func filter = suite_all;
+    static ctest_filter_func filter = suite_all;
 
 #ifdef CTEST_SEGFAULT
     signal(SIGSEGV, sighandler);
@@ -451,29 +485,29 @@ int ctest_main(int argc, const char *argv[])
 #endif
     uint64_t t1 = getCurrentTime();
 
-    struct ctest* ctest_begin = &__TNAME(suite, test);
-    struct ctest* ctest_end = &__TNAME(suite, test);
+    struct ctest* ctest_begin = &CTEST_IMPL_TNAME(suite, test);
+    struct ctest* ctest_end = &CTEST_IMPL_TNAME(suite, test);
     // find begin and end of section by comparing magics
     while (1) {
         struct ctest* t = ctest_begin-1;
-        if (t->magic != __CTEST_MAGIC) break;
+        if (t->magic != CTEST_IMPL_MAGIC) break;
         ctest_begin--;
     }
     while (1) {
         struct ctest* t = ctest_end+1;
-        if (t->magic != __CTEST_MAGIC) break;
+        if (t->magic != CTEST_IMPL_MAGIC) break;
         ctest_end++;
     }
     ctest_end++;    // end after last one
 
     static struct ctest* test;
     for (test = ctest_begin; test != ctest_end; test++) {
-        if (test == &__TNAME(suite, test)) continue;
+        if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) total++;
     }
 
     for (test = ctest_begin; test != ctest_end; test++) {
-        if (test == &__TNAME(suite, test)) continue;
+        if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) {
             ctest_errorbuffer[0] = 0;
             ctest_errorsize = MSG_SIZE-1;
@@ -488,10 +522,10 @@ int ctest_main(int argc, const char *argv[])
                 if (result == 0) {
 #ifdef __APPLE__
                     if (!test->setup) {
-                        test->setup = (SetupFunc) find_symbol(test, "setup");
+                        test->setup = (ctest_setup_func) find_symbol(test, "setup");
                     }
                     if (!test->teardown) {
-                        test->teardown = (TearDownFunc) find_symbol(test, "teardown");
+                        test->teardown = (ctest_teardown_func) find_symbol(test, "teardown");
                     }
 #endif
 

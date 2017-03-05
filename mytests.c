@@ -28,27 +28,28 @@ CTEST_DATA(memtest) {
 
 // Optional setup function for suite, called before every test in suite
 CTEST_SETUP(memtest) {
-    CTEST_LOG("%s() data=%p buffer=%p", __func__, data, data->buffer);
+    CTEST_LOG("%s() data=%p buffer=%p", __func__, (void*)data, (void*)data->buffer);
     data->buffer = (unsigned char*)malloc(1024);
 }
 
 // Optional teardown function for suite, called after every test in suite
 CTEST_TEARDOWN(memtest) {
-    CTEST_LOG("%s() data=%p buffer=%p", __func__, data, data->buffer);
+    CTEST_LOG("%s() data=%p buffer=%p", __func__, (void*)data, (void*)data->buffer);
     if (data->buffer) free(data->buffer);
 }
 
 // These tests are called with the struct* (named data) as argument
 CTEST2(memtest, test1) {
-    CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
+    CTEST_LOG("%s()  data=%p  buffer=%p", __func__, (void*)data, (void*)data->buffer);
 }
 
 CTEST2_SKIP(memtest, test3) {
+    (void)data;
     ASSERT_FAIL();
 }
 
 CTEST2(memtest, test2) {
-    CTEST_LOG("%s()  data=%p  buffer=%p", __func__, data, data->buffer);
+    CTEST_LOG("%s()  data=%p  buffer=%p", __func__, (void*)data, (void*)data->buffer);
     
     ASSERT_FAIL();
 }
@@ -58,10 +59,13 @@ CTEST_DATA(fail) {};
 
 // Asserts can also be used in setup/teardown functions
 CTEST_SETUP(fail) {
+    (void)data;
     ASSERT_FAIL();
 }
 
-CTEST2(fail, test1) {}
+CTEST2(fail, test1) {
+    (void)data;
+}
 
 
 
@@ -71,10 +75,12 @@ CTEST_DATA(weaklinkage) {
 
 // This suite has data, but no setup/teardown
 CTEST2(weaklinkage, test1) {
+    (void)data;
     CTEST_LOG("%s()", __func__);
 }
 
 CTEST2(weaklinkage, test2) {
+    (void)data;
     CTEST_LOG("%s()", __func__);
 }
 
@@ -84,10 +90,12 @@ CTEST_DATA(nosetup) {
 };
 
 CTEST_TEARDOWN(nosetup) {
+    (void)data;
     CTEST_LOG("%s()", __func__);
 }
 
 CTEST2(nosetup, test1) {
+    (void)data;
     CTEST_LOG("%s()", __func__);
 }
 
