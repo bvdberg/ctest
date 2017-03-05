@@ -85,15 +85,17 @@ struct ctest {
         .skip = tskip, \
         .magic = CTEST_IMPL_MAGIC }
 
-#define CTEST_DATA(sname) struct CTEST_IMPL_NAME(sname##_data)
-
 #define CTEST_SETUP(sname) \
-    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_setup)(struct CTEST_IMPL_NAME(sname##_data)* data); \
     void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_setup)(struct CTEST_IMPL_NAME(sname##_data)* data)
 
 #define CTEST_TEARDOWN(sname) \
-    void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_teardown)(struct CTEST_IMPL_NAME(sname##_data)* data); \
     void CTEST_IMPL_WEAK CTEST_IMPL_NAME(sname##_teardown)(struct CTEST_IMPL_NAME(sname##_data)* data)
+
+#define CTEST_DATA(sname) \
+    struct CTEST_IMPL_NAME(sname##_data); \
+    CTEST_SETUP(sname); \
+    CTEST_TEARDOWN(sname); \
+    struct CTEST_IMPL_NAME(sname##_data)
 
 #define CTEST_IMPL_CTEST(sname, tname, tskip) \
     static void CTEST_IMPL_FNAME(sname, tname)(void); \
@@ -110,8 +112,6 @@ struct ctest {
 
 #define CTEST_IMPL_CTEST2(sname, tname, tskip) \
     static struct CTEST_IMPL_NAME(sname##_data) CTEST_IMPL_NAME(sname##_data); \
-    CTEST_SETUP(sname); \
-    CTEST_TEARDOWN(sname); \
     static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data); \
     CTEST_IMPL_STRUCT(sname, tname, tskip, &CTEST_IMPL_NAME(sname##_data), CTEST_IMPL_SETUP_FNAME(sname), CTEST_IMPL_TEARDOWN_FNAME(sname)); \
     static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_NAME(sname##_data)* data)
