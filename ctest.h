@@ -210,10 +210,10 @@ typedef int (*ctest_filter_func)(struct ctest*);
 
 CTEST(suite, test) { }
 
-inline static void vprint_errormsg(const char* const fmt, va_list ap) CTEST_IMPL_FORMAT_PRINTF(1, 0);
-inline static void print_errormsg(const char* const fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);
+static void vprint_errormsg(const char* const fmt, va_list ap) CTEST_IMPL_FORMAT_PRINTF(1, 0);
+static void print_errormsg(const char* const fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);
 
-inline static void vprint_errormsg(const char* const fmt, va_list ap) {
+static void vprint_errormsg(const char* const fmt, va_list ap) {
 	// (v)snprintf returns the number that would have been written
     const int ret = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, ap);
     if (ret < 0) {
@@ -227,7 +227,7 @@ inline static void vprint_errormsg(const char* const fmt, va_list ap) {
     }
 }
 
-inline static void print_errormsg(const char* const fmt, ...) {
+static void print_errormsg(const char* const fmt, ...) {
     va_list argp;
     va_start(argp, fmt);
     vprint_errormsg(fmt, argp);
