@@ -180,10 +180,31 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#if defined(__linux__) || defined(__APPLE__)
+# include <sys/time.h>
+#elif defined(_WIN32) && !defined(gettimeofday)
+# include <windows.h>
+# include <time.h>
+int gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+	time_t rawtime;
+	LARGE_INTEGER tickPerSecond;
+	LARGE_INTEGER tick;
+
+	time(&rawtime);
+	tv->tv_sec = (long)rawtime;
+	QueryPerformanceFrequency(&tickPerSecond);
+	QueryPerformanceCounter(&tick);
+	tv->tv_usec = (tick.QuadPart % tickPerSecond.QuadPart);
+	return 0;
+}
+#else
+# error Cannot find any system time file
+#endif
 
 #ifdef __APPLE__
 #include <dlfcn.h>
