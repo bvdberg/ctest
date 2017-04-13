@@ -70,7 +70,7 @@ struct ctest {
 #define CTEST_IMPL_MAGIC (0xdeadbeef)
 #ifdef __APPLE__
 #define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(1)))
-#else
+#elif !defined(WIN32)
 #define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
 #endif
 
