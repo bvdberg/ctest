@@ -70,8 +70,10 @@ struct ctest {
 #define CTEST_IMPL_MAGIC (0xdeadbeef)
 #ifdef __APPLE__
 #define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(1)))
-#elif !defined(WIN32)
+#elif !defined(_MSC_VER)
 #define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
+#else
+#define CTEST_IMPL_SECTION
 #endif
 
 #define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
@@ -183,7 +185,7 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #include <stdint.h>
 #include <stdlib.h>
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_MSC_VER)
 # include <stdlib.h>
 # include <io.h>
 # include <process.h> /* for getpid() and the exec..() family */
@@ -236,7 +238,7 @@ typedef unsigned __int64  uint64_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 # include <sys/time.h>
-#elif (defined(_WIN32) || defined(_WIN64))
+#elif defined(_MSC_VER)
 # include <windows.h>
 # include <time.h>
 int gettimeofday(struct timeval *tv, struct timezone *tz)
