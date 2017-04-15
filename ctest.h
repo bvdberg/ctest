@@ -68,12 +68,12 @@ struct ctest {
 #define CTEST_IMPL_TNAME(sname, tname) CTEST_IMPL_NAME(sname##_##tname)
 
 #define CTEST_IMPL_MAGIC (0xdeadbeef)
-#ifdef __APPLE__
+#if defined(__APPLE__)
 #define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(1)))
-#elif !defined(_MSC_VER)
-#define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
+#elif defined(_MSC_VER)
+#define CTEST_IMPL_SECTION __declspec( allocate(".ctest$u"))
 #else
-#define CTEST_IMPL_SECTION
+#define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
 #endif
 
 #define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
@@ -516,23 +516,27 @@ static void *find_symbol(struct ctest *test, const char *fname)
 }
 #endif
 
-#if defined(CTEST_SEGFAULT) && defined(_MSC_VER)
-# undef CTEST_SEGFAULT
-#endif
-
 #ifdef CTEST_SEGFAULT
 #include <signal.h>
 static void sighandler(int signum)
 {
     char msg[128];
+#if defined(_BSD_SOURCE) || defined(__GNUC__)
     sprintf(msg, "[SIGNAL %d: %s]", signum, sys_siglist[signum]);
+#else
+    sprintf(msg, "[SIGNAL %d]", signum);
+#endif
     color_print(ANSI_BRED, msg);
     fflush(stdout);
 
     /* "Unregister" the signal handler and send the signal back to the process
      * so it can terminate as expected */
     signal(signum, SIG_DFL);
+#if defined(_MSC_VER)
+    raise(signum);
+#else
     kill(getpid(), signum);
+#endif
 }
 #endif
 
