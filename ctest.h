@@ -24,8 +24,6 @@
 #define CTEST_IMPL_WEAK
 #endif
 
-#define _POSIX_SOURCE
-
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
 #include <stddef.h> /* size_t */
 
