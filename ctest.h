@@ -33,6 +33,9 @@ typedef void (*ctest_teardown_func)(void*);
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-prototypes"
+#elif defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
 #endif
 
 struct ctest {
@@ -51,6 +54,8 @@ struct ctest {
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
+#elif defined(__clang__)
+#pragma clang diagnostic pop
 #endif
 
 #define CTEST_IMPL_NAME(name) ctest_##name
@@ -176,7 +181,7 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #include <stdint.h>
 #include <stdlib.h>
 
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
 # include <process.h> /* for getpid() */
 # include <io.h> /* for _isatty() */
 # define isatty _isatty
@@ -293,6 +298,9 @@ void CTEST_LOG(const char* fmt, ...)
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-noreturn"
+#elif defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 #endif
 
 void CTEST_ERR(const char* fmt, ...)
@@ -310,6 +318,8 @@ void CTEST_ERR(const char* fmt, ...)
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
+#elif defined(__clang__)
+#pragma clang diagnostic pop
 #endif
 
 void assert_str(const char* exp, const char*  real, const char* caller, int line) {
@@ -592,4 +602,3 @@ int ctest_main(int argc, const char *argv[])
 #endif
 
 #endif
-
