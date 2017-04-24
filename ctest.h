@@ -266,7 +266,11 @@ static void print_errormsg(const char* const fmt, ...) CTEST_IMPL_FORMAT_PRINTF(
 
 static void vprint_errormsg(const char* const fmt, va_list ap) {
 	// (v)snprintf returns the number that would have been written
-    const int ret = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, ap);
+#ifdef _MSC_VER
+  const int ret = vsnprintf_s(ctest_errormsg, MSG_SIZE, ctest_errorsize, fmt, ap);
+#else
+  const int ret = vsnprintf(ctest_errormsg, ctest_errorsize, fmt, ap);
+#endif
     if (ret < 0) {
 		ctest_errormsg[0] = 0x00;
     } else {
