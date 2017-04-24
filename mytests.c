@@ -75,13 +75,17 @@ CTEST2(memtest, test2) {
 }
 
 
-CTEST_DATA(fail) {};
+CTEST_DATA(fail) {
+    unsigned dummy;
+};
 
 // Asserts can also be used in setup/teardown functions
 CTEST_SETUP(fail) {
     (void)data;
     ASSERT_FAIL();
 }
+
+CTEST_TEARDOWN(fail) {}
 
 CTEST2(fail, test1) {
     (void)data;
@@ -92,6 +96,10 @@ CTEST2(fail, test1) {
 CTEST_DATA(weaklinkage) {
     int number;
 };
+
+CTEST_SETUP(weaklinkage) {}
+
+CTEST_TEARDOWN(weaklinkage) {}
 
 // This suite has data, but no setup/teardown
 CTEST2(weaklinkage, test1) {
@@ -108,6 +116,8 @@ CTEST2(weaklinkage, test2) {
 CTEST_DATA(nosetup) {
     int value;
 };
+
+CTEST_SETUP(nosetup) {}
 
 CTEST_TEARDOWN(nosetup) {
     (void)data;

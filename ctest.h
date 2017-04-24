@@ -24,6 +24,8 @@
 #define CTEST_IMPL_WEAK
 #endif
 
+#define _POSIX_SOURCE
+
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
 #include <stddef.h> /* size_t */
 
@@ -72,7 +74,19 @@ struct ctest {
 #define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
 #endif
 
-#define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
+#if defined(_MSC_VER)
+# define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
+    static struct ctest CTEST_IMPL_SECTION CTEST_IMPL_TNAME(sname, tname) = { \
+        .ssname=#sname, \
+        .ttname=#tname, \
+        .run = CTEST_IMPL_FNAME(sname, tname), \
+        .data = tdata, \
+        .setup = (ctest_setup_func) tsetup, \
+        .teardown = (ctest_teardown_func) tteardown, \
+        .skip = tskip, \
+        .magic = CTEST_IMPL_MAGIC }
+#else
+# define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
     static struct ctest CTEST_IMPL_TNAME(sname, tname) CTEST_IMPL_SECTION = { \
         .ssname=#sname, \
         .ttname=#tname, \
@@ -82,6 +96,7 @@ struct ctest {
         .teardown = (ctest_teardown_func) tteardown, \
         .skip = tskip, \
         .magic = CTEST_IMPL_MAGIC }
+#endif
 
 #define CTEST_DATA(sname) struct CTEST_IMPL_NAME(sname##_data)
 
@@ -194,6 +209,7 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #elif defined(_MSC_VER)
 # include <windows.h>
 # include <time.h>
+# pragma warning(disable : 4244)
 int gettimeofday(struct timeval *tv, struct timezone *tz)
 {
 	time_t rawtime;
@@ -479,10 +495,14 @@ static void *find_symbol(struct ctest *test, const char *fname)
 static void sighandler(int signum)
 {
     char msg[128];
-#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L
+#if !defined(_MSC_VER) && defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L
     sprintf(msg, "[SIGNAL %d: %s]", signum, sys_siglist[signum]);
 #else
+# ifdef _MSC_VER
+    sprintf_s(msg, 128, "[SIGNAL %d]", signum);
+# else
     sprintf(msg, "[SIGNAL %d]", signum);
+# endif
 #endif
     color_print(ANSI_BRED, msg);
     fflush(stdout);
@@ -594,7 +614,11 @@ int ctest_main(int argc, const char *argv[])
 
     const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
     char results[80];
+# ifdef _MSC_VER
+    sprintf_s(results, 80, "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %" PRIu64 " ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
+# else
     sprintf(results, "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %" PRIu64 " ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
+# endif
     color_print(color, results);
     return num_fail;
 }
