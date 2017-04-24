@@ -36,6 +36,9 @@ CTEST(suite2, test1) {
 CTEST(suite3, test3) {
 }
 
+#ifdef _MSC_VER
+# define __func__ __FUNCTION__
+#endif
 
 // A test suite with a setup/teardown function
 // This is converted into a struct that's automatically passed to all tests in the suite
