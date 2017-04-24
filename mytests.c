@@ -1,5 +1,22 @@
-#include <unistd.h>
 #include <stdlib.h>
+#ifdef _MSC_VER
+#include <windows.h>
+void usleep(__int64 usec)
+{
+    HANDLE timer;
+    LARGE_INTEGER ft;
+
+    ft.QuadPart = -(10*usec); // Convert to 100 nanosecond interval, negative value indicates relative time
+
+    timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+}
+#else
+# include <unistd.h>
+#endif
+
 #include "ctest.h"
 
 // basic test without setup/teardown
@@ -19,6 +36,9 @@ CTEST(suite2, test1) {
 CTEST(suite3, test3) {
 }
 
+#ifdef _MSC_VER
+# define __func__ __FUNCTION__
+#endif
 
 // A test suite with a setup/teardown function
 // This is converted into a struct that's automatically passed to all tests in the suite
@@ -55,13 +75,17 @@ CTEST2(memtest, test2) {
 }
 
 
-CTEST_DATA(fail) {};
+CTEST_DATA(fail) {
+    unsigned dummy;
+};
 
 // Asserts can also be used in setup/teardown functions
 CTEST_SETUP(fail) {
     (void)data;
     ASSERT_FAIL();
 }
+
+CTEST_TEARDOWN(fail) {}
 
 CTEST2(fail, test1) {
     (void)data;
@@ -72,6 +96,10 @@ CTEST2(fail, test1) {
 CTEST_DATA(weaklinkage) {
     int number;
 };
+
+CTEST_SETUP(weaklinkage) {}
+
+CTEST_TEARDOWN(weaklinkage) {}
 
 // This suite has data, but no setup/teardown
 CTEST2(weaklinkage, test1) {
@@ -88,6 +116,8 @@ CTEST2(weaklinkage, test2) {
 CTEST_DATA(nosetup) {
     int value;
 };
+
+CTEST_SETUP(nosetup) {}
 
 CTEST_TEARDOWN(nosetup) {
     (void)data;
