@@ -61,6 +61,7 @@ struct ctest {
 #if defined(__APPLE__)
 #define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(1)))
 #elif defined(_MSC_VER)
+#pragma data_seg(".ctest$u")
 #define CTEST_IMPL_SECTION __declspec( allocate(".ctest$u"))
 #else
 #define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
