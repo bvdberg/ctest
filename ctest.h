@@ -67,7 +67,7 @@ struct ctest {
 #define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(1)))
 #elif defined(_MSC_VER)
 #pragma data_seg(".ctest$u")
-#define CTEST_IMPL_SECTION __declspec( allocate(".ctest$u"))
+#define CTEST_IMPL_SECTION __declspec(allocate(".ctest$u"))
 #else
 #define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
 #endif
@@ -479,7 +479,7 @@ static void *find_symbol(struct ctest *test, const char *fname)
 static void sighandler(int signum)
 {
     char msg[128];
-#if defined(_BSD_SOURCE) || defined(__GNUC__)
+#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L
     sprintf(msg, "[SIGNAL %d: %s]", signum, sys_siglist[signum]);
 #else
     sprintf(msg, "[SIGNAL %d]", signum);
