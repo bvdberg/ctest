@@ -467,7 +467,7 @@ int ctest_main(int argc, const char *argv[])
     static int num_ok = 0;
     static int num_fail = 0;
     static int num_skip = 0;
-    static int index = 1;
+    static int idx = 1;
     static ctest_filter_func filter = suite_all;
 
 #ifdef CTEST_SEGFAULT
@@ -512,7 +512,7 @@ int ctest_main(int argc, const char *argv[])
             ctest_errorbuffer[0] = 0;
             ctest_errorsize = MSG_SIZE-1;
             ctest_errormsg = ctest_errorbuffer;
-            printf("TEST %d/%d %s:%s ", index, total, test->ssname, test->ttname);
+            printf("TEST %d/%d %s:%s ", idx, total, test->ssname, test->ttname);
             fflush(stdout);
             if (test->skip) {
                 color_print(ANSI_BYELLOW, "[SKIPPED]");
@@ -548,7 +548,7 @@ int ctest_main(int argc, const char *argv[])
                 }
                 if (ctest_errorsize != MSG_SIZE-1) printf("%s", ctest_errorbuffer);
             }
-            index++;
+            idx++;
         }
     }
     uint64_t t2 = getCurrentTime();
