@@ -108,10 +108,8 @@ CTEST_IMPL_DIAG_POP()
 
 #define CTEST_DATA(sname) \
     struct CTEST_IMPL_DATA_SNAME(sname); \
-    CTEST_IMPL_DIAG_PUSH_IGNORED(redundant-decls) \
     static void (*CTEST_IMPL_SETUP_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*); \
     static void (*CTEST_IMPL_TEARDOWN_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*); \
-    CTEST_IMPL_DIAG_POP() \
     struct CTEST_IMPL_DATA_SNAME(sname)
 
 #define CTEST_IMPL_CTEST(sname, tname, tskip) \
