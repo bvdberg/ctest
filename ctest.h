@@ -31,7 +31,7 @@ typedef void (*ctest_teardown_func)(void*);
 #define CTEST_IMPL_PRAGMA(x) _Pragma (#x)
 
 #if defined(__GNUC__)
-#if (defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
+#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
 /* the GCC argument will work for both gcc and clang  */
 #define CTEST_IMPL_DIAG_PUSH_IGNORED(w) \
     CTEST_IMPL_PRAGMA(GCC diagnostic push) \
