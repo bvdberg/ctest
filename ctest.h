@@ -107,6 +107,11 @@ CTEST_IMPL_DIAG_POP()
     static void CTEST_IMPL_TEARDOWN_FNAME(sname)(struct CTEST_IMPL_DATA_SNAME(sname)* data)
 
 #define CTEST_DATA(sname) \
+    struct CTEST_IMPL_DATA_SNAME(sname); \
+    CTEST_IMPL_DIAG_PUSH_IGNORED(redundant-decls) \
+    static void (*CTEST_IMPL_SETUP_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*); \
+    static void (*CTEST_IMPL_TEARDOWN_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*); \
+    CTEST_IMPL_DIAG_POP() \
     struct CTEST_IMPL_DATA_SNAME(sname)
 
 #define CTEST_IMPL_CTEST(sname, tname, tskip) \
@@ -117,10 +122,6 @@ CTEST_IMPL_DIAG_POP()
 #define CTEST_IMPL_CTEST2(sname, tname, tskip) \
     static struct CTEST_IMPL_DATA_SNAME(sname) CTEST_IMPL_DATA_TNAME(sname, tname); \
     static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_DATA_SNAME(sname)* data); \
-    CTEST_IMPL_DIAG_PUSH_IGNORED(redundant-decls) \
-    static void (*CTEST_IMPL_SETUP_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*); \
-    static void (*CTEST_IMPL_TEARDOWN_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*); \
-    CTEST_IMPL_DIAG_POP() \
     CTEST_IMPL_STRUCT(sname, tname, tskip, &CTEST_IMPL_DATA_TNAME(sname, tname), &CTEST_IMPL_SETUP_FPNAME(sname), &CTEST_IMPL_TEARDOWN_FPNAME(sname)); \
     static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_DATA_SNAME(sname)* data)
 
