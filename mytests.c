@@ -50,7 +50,6 @@ CTEST2_SKIP(memtest, test3) {
 
 CTEST2(memtest, test2) {
     CTEST_LOG("%s()  data=%p  buffer=%p", __func__, (void*)data, (void*)data->buffer);
-    
     ASSERT_FAIL();
 }
 

@@ -1,6 +1,6 @@
 UNAME=$(shell uname)
 
-CCFLAGS=-Wall -Wextra -Wconversion -Wredundant-decls -Wno-unused-parameter -O3
+CCFLAGS=-Wall -Wextra -Wconversion -Wredundant-decls -Wshadow -Wno-unused-parameter -O3
 CC=clang
 
 all: test
