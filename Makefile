@@ -3,10 +3,6 @@ UNAME=$(shell uname)
 CCFLAGS=-Wall -Wextra -Wconversion -Wredundant-decls -Wno-unused-parameter -O3
 CC=clang
 
-ifeq ($(UNAME), Darwin)
-LDFLAGS=-Wl,-flat_namespace,-undefined,dynamic_lookup
-endif
-
 all: test
 
 remake: clean all
