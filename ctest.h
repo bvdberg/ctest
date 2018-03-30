@@ -22,6 +22,41 @@
 #define CTEST_IMPL_FORMAT_PRINTF(a, b)
 #endif
 
+/* To enforce a total ordering on tests defined within a file, we can use the
+ * non-C-standard-but-widely-implemented `__COUNTER__`.  This way, the tests
+ * may be sorted in program definition order.  If `__COUNTER__` isn't available,
+ * the C-standard `__LINE__` will have the same effect _most_ of the time.
+ *
+ * Notably, this fails when multiple `CTEST` expansions occur on the same line.
+ * That might seem like an insane thing to do, but could easily happen if
+ * multiple `CTEST` invocations occur in a macro.  With `__LINE__`, the ordering
+ * of colinear test cases is not defined.  Oh well...  */
+#if defined(__COUNTER__)
+#define CTEST_IMPL_COUNTER __COUNTER__
+#else
+#define CTEST_IMPL_COUNTER __LINE__
+#endif
+
+/* gcc and clang implement preprocessor-based hardening that replaces certain
+ * pointer-problem-prone library functions with new ones that take additional
+ * argument(s) if information about object size is available at compile-time.
+ * Since we build a linker set out of statically-defined objects, we treat
+ * pointers into the linker set as pointers into an ordinary array, but the
+ * compiler has no idea that the memory is contiguous, so hardened library
+ * functions that receive a pointer into the linker set will assert a buffer
+ * overrun error if that function accesses past the end of the first item.
+ * Therefore, we need to trick the compiler into not invoking these hardened
+ * functions when we are passing them a pointer into the linker set.
+ *
+ * Luckily, since the mechanism is preprocessor-based, the solution is simple:
+ * wrap the function name in parens so that e.g. memcpy does not become
+ * __memcpy_chk during preprocessing.  */
+#if _FORTIFY_SOURCE > 0
+#define CTEST_IMPL_UNFORTIFIED(f) (f)
+#else
+#define CTEST_IMPL_UNFORTIFIED(f) f
+#endif
+
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
 #include <stddef.h> /* size_t */
 
@@ -61,6 +96,10 @@ struct ctest {
     ctest_setup_func* setup;
     ctest_teardown_func* teardown;
 
+    // for sorting purposes
+    const char* file;
+    int counter;
+
     int skip;
 
     unsigned int magic;
@@ -95,6 +134,8 @@ CTEST_IMPL_DIAG_POP()
         .data = tdata, \
         .setup = tsetup, \
         .teardown = tteardown, \
+        .file = __FILE__, \
+        .counter = CTEST_IMPL_COUNTER, \
         .skip = tskip, \
         .magic = CTEST_IMPL_MAGIC }
 
@@ -228,8 +269,6 @@ typedef int (*ctest_filter_func)(struct ctest*);
 #define ANSI_BCYAN    "\033[01;36m"
 #define ANSI_WHITE    "\033[01;37m"
 #define ANSI_NORMAL   "\033[0m"
-
-CTEST(suite, test) { }
 
 static void vprint_errormsg(const char* const fmt, va_list ap) CTEST_IMPL_FORMAT_PRINTF(1, 0);
 static void print_errormsg(const char* const fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);
@@ -429,6 +468,21 @@ static void color_print(const char* color, const char* text) {
         printf("%s\n", text);
 }
 
+static int ctest_comparator(const void* p1, const void* p2)
+{
+    int rc;
+    const struct ctest* test1 = (const struct ctest*) p1;
+    const struct ctest* test2 = (const struct ctest*) p2;
+
+#define CTEST_IMPL_TRY(expr) do { if ((rc = (expr)) != 0) return rc; } while (0)
+    CTEST_IMPL_TRY(strcmp(test1->ssname, test2->ssname));
+    CTEST_IMPL_TRY(strcmp(test1->file, test2->file));
+    CTEST_IMPL_TRY(test1->counter - test2->counter);
+#undef CTEST_IMPL_TRY
+
+    return rc;
+}
+
 #ifdef CTEST_SEGFAULT
 #include <signal.h>
 static void sighandler(int signum)
@@ -445,7 +499,10 @@ static void sighandler(int signum)
 }
 #endif
 
-int ctest_main(int argc, const char *argv[]);
+/* Instantiate a dummy struct ctest.  This will serve as an initial handle into
+ * the linker set so we can find its boundaries without relying on
+ * linker-specific magic symbols e.g. __start_SECTION and __stop_SECTION.  */
+CTEST(sdummy, tdummy) { }
 
 int ctest_main(int argc, const char *argv[])
 {
@@ -471,8 +528,9 @@ int ctest_main(int argc, const char *argv[])
 #endif
     uint64_t t1 = getCurrentTime();
 
-    struct ctest* ctest_begin = &CTEST_IMPL_TNAME(suite, test);
-    struct ctest* ctest_end = &CTEST_IMPL_TNAME(suite, test);
+    struct ctest* ctest_dummy = &CTEST_IMPL_TNAME(sdummy, tdummy);
+    struct ctest* ctest_begin = ctest_dummy;
+    struct ctest* ctest_end = ctest_dummy;
     // find begin and end of section by comparing magics
     while (1) {
         struct ctest* t = ctest_begin-1;
@@ -486,14 +544,21 @@ int ctest_main(int argc, const char *argv[])
     }
     ctest_end++;    // end after last one
 
+    // destroy dummy struct via memmove and sort resulting array
+    CTEST_IMPL_UNFORTIFIED(memmove)(ctest_dummy, ctest_dummy + 1,
+            (size_t)(ctest_end - (ctest_dummy + 1)) * sizeof *ctest_dummy);
+    ctest_end--;
+    CTEST_IMPL_UNFORTIFIED(qsort)(ctest_begin,
+            (size_t)(ctest_end - ctest_begin), sizeof *ctest_begin,
+            ctest_comparator);
+
+
     static struct ctest* test;
     for (test = ctest_begin; test != ctest_end; test++) {
-        if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) total++;
     }
 
     for (test = ctest_begin; test != ctest_end; test++) {
-        if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) {
             ctest_errorbuffer[0] = 0;
             ctest_errorsize = MSG_SIZE-1;
