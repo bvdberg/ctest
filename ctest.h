@@ -74,8 +74,10 @@ CTEST_IMPL_DIAG_POP()
 #define CTEST_IMPL_DATA_SNAME(sname) CTEST_IMPL_NAME(sname##_data)
 #define CTEST_IMPL_DATA_TNAME(sname, tname) CTEST_IMPL_NAME(sname##_##tname##_data)
 #define CTEST_IMPL_SETUP_FNAME(sname) CTEST_IMPL_NAME(sname##_setup)
+#define CTEST_IMPL_SETUP_SHIM_FNAME(sname) CTEST_IMPL_NAME(sname##_setup_shim)
 #define CTEST_IMPL_SETUP_FPNAME(sname) CTEST_IMPL_NAME(sname##_setup_ptr)
 #define CTEST_IMPL_TEARDOWN_FNAME(sname) CTEST_IMPL_NAME(sname##_teardown)
+#define CTEST_IMPL_TEARDOWN_SHIM_FNAME(sname) CTEST_IMPL_NAME(sname##_teardown_shim)
 #define CTEST_IMPL_TEARDOWN_FPNAME(sname) CTEST_IMPL_NAME(sname##_teardown_ptr)
 
 #define CTEST_IMPL_MAGIC (0xdeadbeef)
@@ -91,25 +93,32 @@ CTEST_IMPL_DIAG_POP()
         .ttname=#tname, \
         .run = CTEST_IMPL_FNAME(sname, tname), \
         .data = tdata, \
-        .setup = (ctest_setup_func*) tsetup, \
-        .teardown = (ctest_teardown_func*) tteardown, \
+        .setup = tsetup, \
+        .teardown = tteardown, \
         .skip = tskip, \
         .magic = CTEST_IMPL_MAGIC }
 
 #define CTEST_SETUP(sname) \
-    static void CTEST_IMPL_SETUP_FNAME(sname)(struct CTEST_IMPL_DATA_SNAME(sname)* data); \
-    static void (*CTEST_IMPL_SETUP_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*) = &CTEST_IMPL_SETUP_FNAME(sname); \
+    static void CTEST_IMPL_SETUP_FNAME(sname)(struct CTEST_IMPL_DATA_SNAME(sname)*); \
+    static void CTEST_IMPL_SETUP_SHIM_FNAME(sname)(void *data) \
+    { \
+        CTEST_IMPL_SETUP_FNAME(sname)((struct CTEST_IMPL_DATA_SNAME(sname)*)data); \
+    } \
+    static ctest_setup_func CTEST_IMPL_SETUP_FPNAME(sname) = &CTEST_IMPL_SETUP_SHIM_FNAME(sname); \
     static void CTEST_IMPL_SETUP_FNAME(sname)(struct CTEST_IMPL_DATA_SNAME(sname)* data)
 
 #define CTEST_TEARDOWN(sname) \
-    static void CTEST_IMPL_TEARDOWN_FNAME(sname)(struct CTEST_IMPL_DATA_SNAME(sname)* data); \
-    static void (*CTEST_IMPL_TEARDOWN_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*) = &CTEST_IMPL_TEARDOWN_FNAME(sname); \
+    static void CTEST_IMPL_TEARDOWN_FNAME(sname)(struct CTEST_IMPL_DATA_SNAME(sname)*); \
+    static void CTEST_IMPL_TEARDOWN_SHIM_FNAME(sname)(void *data) \
+    { \
+        CTEST_IMPL_TEARDOWN_FNAME(sname)((struct CTEST_IMPL_DATA_SNAME(sname)*)data); \
+    } \
+    static ctest_teardown_func CTEST_IMPL_TEARDOWN_FPNAME(sname) = &CTEST_IMPL_TEARDOWN_SHIM_FNAME(sname); \
     static void CTEST_IMPL_TEARDOWN_FNAME(sname)(struct CTEST_IMPL_DATA_SNAME(sname)* data)
 
 #define CTEST_DATA(sname) \
-    struct CTEST_IMPL_DATA_SNAME(sname); \
-    static void (*CTEST_IMPL_SETUP_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*); \
-    static void (*CTEST_IMPL_TEARDOWN_FPNAME(sname))(struct CTEST_IMPL_DATA_SNAME(sname)*); \
+    static ctest_setup_func CTEST_IMPL_SETUP_FPNAME(sname); \
+    static ctest_teardown_func CTEST_IMPL_TEARDOWN_FPNAME(sname); \
     struct CTEST_IMPL_DATA_SNAME(sname)
 
 #define CTEST_IMPL_CTEST(sname, tname, tskip) \
@@ -119,7 +128,7 @@ CTEST_IMPL_DIAG_POP()
 
 #define CTEST_IMPL_CTEST2(sname, tname, tskip) \
     static struct CTEST_IMPL_DATA_SNAME(sname) CTEST_IMPL_DATA_TNAME(sname, tname); \
-    static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_DATA_SNAME(sname)* data); \
+    static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_DATA_SNAME(sname)*); \
     CTEST_IMPL_STRUCT(sname, tname, tskip, &CTEST_IMPL_DATA_TNAME(sname, tname), &CTEST_IMPL_SETUP_FPNAME(sname), &CTEST_IMPL_TEARDOWN_FPNAME(sname)); \
     static void CTEST_IMPL_FNAME(sname, tname)(struct CTEST_IMPL_DATA_SNAME(sname)* data)
 
