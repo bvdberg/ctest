@@ -54,7 +54,9 @@ CTEST2(memtest, test2) {
 }
 
 
-CTEST_DATA(fail) {};
+CTEST_DATA(fail) {
+    int unused;
+};
 
 // Asserts can also be used in setup/teardown functions
 CTEST_SETUP(fail) {
