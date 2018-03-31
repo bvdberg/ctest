@@ -37,20 +37,19 @@
 #define CTEST_IMPL_COUNTER __LINE__
 #endif
 
-/* gcc and clang implement preprocessor-based hardening that replaces certain
- * pointer-problem-prone library functions with new ones that take additional
- * argument(s) if information about object size is available at compile-time.
- * Since we build a linker set out of statically-defined objects, we treat
- * pointers into the linker set as pointers into an ordinary array, but the
- * compiler has no idea that the memory is contiguous, so hardened library
- * functions that receive a pointer into the linker set will assert a buffer
- * overrun error if that function accesses past the end of the first item.
- * Therefore, we need to trick the compiler into not invoking these hardened
- * functions when we are passing them a pointer into the linker set.
+/* If `_FORTIFY_SOURCE` is non-zero, some compilers will transform certain
+ * pointer-problem-prone libc functions into hardened versions via preprocessor
+ * macros.  These hardened versions take additional parameters(s) with
+ * compile-time object size information.  Since we build a linker set out of
+ * statically-defined objects, we can treat linker set pointers as array
+ * pointers.  The trouble is, the compiler has no idea that the memory is
+ * contiguous, so hardened versions will assert a buffer overrun error if they
+ * access past the end of the first item.  Therefore, we need a means for
+ * disabling this transformation when dealing with linker set pointers.
  *
  * Luckily, since the mechanism is preprocessor-based, the solution is simple:
- * wrap the function name in parens so that e.g. memcpy does not become
- * __memcpy_chk during preprocessing.  */
+ * wrap the function name in parens so that e.g. `memcpy` does not become
+ * `__memcpy_chk` during preprocessing.  */
 #define CTEST_IMPL_UNFORTIFIED(f) (f)
 
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
