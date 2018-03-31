@@ -51,11 +51,7 @@
  * Luckily, since the mechanism is preprocessor-based, the solution is simple:
  * wrap the function name in parens so that e.g. memcpy does not become
  * __memcpy_chk during preprocessing.  */
-#if _FORTIFY_SOURCE > 0
 #define CTEST_IMPL_UNFORTIFIED(f) (f)
-#else
-#define CTEST_IMPL_UNFORTIFIED(f) f
-#endif
 
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
 #include <stddef.h> /* size_t */
