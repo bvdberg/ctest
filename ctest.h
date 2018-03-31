@@ -425,7 +425,7 @@ static void color_print(const char* color, const char* text) {
 static void sighandler(int signum)
 {
     char msg[128];
-    sprintf(msg, "[SIGNAL %d: %s]", signum, sys_siglist[signum]);
+    snprintf(msg, sizeof(msg), "[SIGNAL %d: %s]", signum, sys_siglist[signum]);
     color_print(ANSI_BRED, msg);
     fflush(stdout);
 
@@ -523,7 +523,7 @@ int ctest_main(int argc, const char *argv[])
 
     const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
     char results[80];
-    sprintf(results, "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %" PRIu64 " ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
+    snprintf(results, sizeof(results), "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %" PRIu64 " ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
     color_print(color, results);
     return num_fail;
 }
