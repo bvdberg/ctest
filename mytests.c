@@ -1,10 +1,18 @@
-#include <unistd.h>
 #include <stdlib.h>
+
+#ifndef _WIN32
+#include <unistd.h>
+#define MSLEEP(ms) usleep((ms) * 1000)
+#else
+#include <windows.h>
+#define MSLEEP(ms) Sleep(ms)
+#endif
+
 #include "ctest.h"
 
 // basic test without setup/teardown
 CTEST(suite1, test1) {
-    usleep(2000);
+    MSLEEP(2);
 }
 
 // there are many different ASSERT macro's (see ctest.h)
