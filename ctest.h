@@ -22,21 +22,6 @@
 #define CTEST_IMPL_FORMAT_PRINTF(a, b)
 #endif
 
-/* To enforce a total ordering on tests defined within a file, we can use the
- * non-C-standard-but-widely-implemented `__COUNTER__`.  This way, the tests
- * may be sorted in program definition order.  If `__COUNTER__` isn't available,
- * the C-standard `__LINE__` will have the same effect _most_ of the time.
- *
- * Notably, this fails when multiple `CTEST` expansions occur on the same line.
- * That might seem like an insane thing to do, but could easily happen if
- * multiple `CTEST` invocations occur in a macro.  With `__LINE__`, the ordering
- * of colinear test cases is not defined.  Oh well...  */
-#if defined(__COUNTER__)
-#define CTEST_IMPL_COUNTER __COUNTER__
-#else
-#define CTEST_IMPL_COUNTER __LINE__
-#endif
-
 /* If `_FORTIFY_SOURCE` is non-zero, some compilers will transform certain
  * pointer-problem-prone libc functions into hardened versions via preprocessor
  * macros.  These hardened versions take additional parameters(s) with
@@ -91,10 +76,6 @@ struct ctest {
     ctest_setup_func* setup;
     ctest_teardown_func* teardown;
 
-    // for sorting purposes
-    const char* file;
-    int counter;
-
     int skip;
 
     unsigned int magic;
@@ -129,8 +110,6 @@ CTEST_IMPL_DIAG_POP()
         .data = tdata, \
         .setup = tsetup, \
         .teardown = tteardown, \
-        .file = __FILE__, \
-        .counter = CTEST_IMPL_COUNTER, \
         .skip = tskip, \
         .magic = CTEST_IMPL_MAGIC }
 
@@ -471,8 +450,7 @@ static int ctest_comparator(const void* p1, const void* p2)
 
 #define CTEST_IMPL_TRY(expr) do { if ((rc = (expr)) != 0) return rc; } while (0)
     CTEST_IMPL_TRY(strcmp(test1->ssname, test2->ssname));
-    CTEST_IMPL_TRY(strcmp(test1->file, test2->file));
-    CTEST_IMPL_TRY(test1->counter - test2->counter);
+    CTEST_IMPL_TRY(strcmp(test1->ttname, test2->ttname));
 #undef CTEST_IMPL_TRY
 
     return rc;
