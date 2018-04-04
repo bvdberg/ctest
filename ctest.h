@@ -79,14 +79,19 @@ CTEST_IMPL_DIAG_POP()
 #define CTEST_IMPL_TEARDOWN_FPNAME(sname) CTEST_IMPL_NAME(sname##_teardown_ptr)
 
 #define CTEST_IMPL_MAGIC (0xdeadbeef)
-#ifdef __APPLE__
+#if defined(_MSC_VER)
+#pragma data_seg(push)
+#pragma data_seg(".ctest$u")
+#pragma data_seg(pop)
+#define CTEST_IMPL_SECTION __declspec(allocate(".ctest$u")) __declspec(align(1))
+#elif defined(__APPLE__)
 #define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(1)))
 #else
 #define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
 #endif
 
 #define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
-    static struct ctest CTEST_IMPL_TNAME(sname, tname) CTEST_IMPL_SECTION = { \
+    static struct ctest CTEST_IMPL_SECTION CTEST_IMPL_TNAME(sname, tname) = { \
         .ssname=#sname, \
         .ttname=#tname, \
         .run = CTEST_IMPL_FNAME(sname, tname), \
@@ -187,10 +192,18 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
-#include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#ifndef _WIN32
+#include <sys/time.h>
+#include <unistd.h>
+#define CTEST_IMPL_ISATTY isatty
+#else
+#include <io.h>
+#include <windows.h>
+#define CTEST_IMPL_ISATTY _isatty
+#endif
 
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
@@ -405,11 +418,22 @@ static int suite_filter(struct ctest* t) {
 }
 
 static uint64_t getCurrentTime(void) {
+    uint64_t now64;
+#ifndef _WIN32
     struct timeval now;
     gettimeofday(&now, NULL);
-    uint64_t now64 = (uint64_t) now.tv_sec;
+    now64 = (uint64_t) now.tv_sec;
     now64 *= 1000000;
     now64 += ((uint64_t) now.tv_usec);
+#else
+    LARGE_INTEGER frequency;
+    LARGE_INTEGER counter;
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&counter);
+    now64 = counter.QuadPart;
+    now64 *= 1000000;
+    now64 /= frequency.QuadPart;
+#endif
     return now64;
 }
 
@@ -458,7 +482,7 @@ int ctest_main(int argc, const char *argv[])
 #ifdef CTEST_NO_COLORS
     color_output = 0;
 #else
-    color_output = isatty(1);
+    color_output = CTEST_IMPL_ISATTY(1);
 #endif
     uint64_t t1 = getCurrentTime();
 
