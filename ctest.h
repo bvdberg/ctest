@@ -137,6 +137,10 @@ void CTEST_ERR(const char* fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);  // doesn't
 void assert_str(const char* exp, const char* real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
 
+void assert_wstr(wchar_t *exp, wchar_t *real, const char* caller, int line);
+#define ASSERT_WSTR(exp, real) assert_wstr(exp, real, __FILE__, __LINE__)
+
+
 void assert_data(const unsigned char* exp, size_t expsize,
                  const unsigned char* real, size_t realsize,
                  const char* caller, int line);
@@ -191,6 +195,7 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 #include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <wchar.h>
 
 static size_t ctest_errorsize;
 static char* ctest_errormsg;
@@ -294,6 +299,14 @@ void assert_str(const char* exp, const char*  real, const char* caller, int line
         (exp != NULL && real == NULL) ||
         (exp && real && strcmp(exp, real) != 0)) {
         CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
+    }
+}
+
+void assert_wstr(wchar_t *exp, wchar_t *real, const char* caller, int line) {
+    if ((exp == NULL && real != NULL) ||
+        (exp != NULL && real == NULL) ||
+        (exp && real && wcscmp(exp, real) != 0)) {
+        CTEST_ERR("%s:%d  expected '%ls', got '%ls'", caller, line, exp, real);
     }
 }
 
