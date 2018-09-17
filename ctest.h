@@ -137,7 +137,7 @@ void CTEST_ERR(const char* fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);  // doesn't
 void assert_str(const char* exp, const char* real, const char* caller, int line);
 #define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
 
-void assert_wstr(wchar_t *exp, wchar_t *real, const char* caller, int line);
+void assert_wstr(const wchar_t *exp, const wchar_t *real, const char* caller, int line);
 #define ASSERT_WSTR(exp, real) assert_wstr(exp, real, __FILE__, __LINE__)
 
 
@@ -302,7 +302,7 @@ void assert_str(const char* exp, const char*  real, const char* caller, int line
     }
 }
 
-void assert_wstr(wchar_t *exp, wchar_t *real, const char* caller, int line) {
+void assert_wstr(const wchar_t *exp, const wchar_t *real, const char* caller, int line) {
     if ((exp == NULL && real != NULL) ||
         (exp != NULL && real == NULL) ||
         (exp && real && wcscmp(exp, real) != 0)) {
