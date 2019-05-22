@@ -451,7 +451,7 @@ static void sighandler(int signum)
 
 int ctest_main(int argc, const char *argv[]);
 
-int ctest_main(int argc, const char *argv[])
+__attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[])
 {
     static int total = 0;
     static int num_ok = 0;
