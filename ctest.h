@@ -436,10 +436,12 @@ static void color_print(const char* color, const char* text) {
 #include <signal.h>
 static void sighandler(int signum)
 {
-    char msg[128];
-    snprintf(msg, sizeof(msg), "[SIGNAL %d: %s]", signum, sys_siglist[signum]);
-    color_print(ANSI_BRED, msg);
-    fflush(stdout);
+    if (color_output)
+        const char *msg = ANSI_BRED "[SIGSEGV: Segmentation fault]" ANSI_NORMAL "\n";
+    else
+        const char *msg = "[SIGSEGV: Segmentation fault]\n";
+
+    write(STDOUT_FILENO, msg, strlen(msg));
 
     /* "Unregister" the signal handler and send the signal back to the process
      * so it can terminate as expected */
