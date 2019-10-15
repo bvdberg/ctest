@@ -51,10 +51,23 @@ typedef void (*ctest_teardown_func)(void*);
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define __unused __attribute__((unused))
+#ifndef __unused
+#define __unused	__attribute__((__unused__))
+#endif
 #else
 #define __unused
 #endif
+
+#ifdef __GNUC__
+#define GCC_VERSION (__GNUC__ * 10000       \
+                     + __GNUC_MINOR__ * 100 \
+                     + __GNUC_PATCHLEVEL__)
+#endif
+
+#if GCC_VERSION < 40500 || !defined(__clang__)
+#define __unused
+#endif
+
 
 CTEST_IMPL_DIAG_PUSH_IGNORED(strict-prototypes)
 
