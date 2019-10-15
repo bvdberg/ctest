@@ -38,28 +38,23 @@ typedef void (*ctest_teardown_func)(void*);
     CTEST_IMPL_PRAGMA(GCC diagnostic ignored "-W" #w)
 #define CTEST_IMPL_DIAG_POP() \
     CTEST_IMPL_PRAGMA(GCC diagnostic pop)
+#ifndef __unused
+#define __unused	__attribute__((__unused__))
+#endif
 #else
 /* the push/pop functionality wasn't in gcc until 4.6, fallback to "ignored"  */
 #define CTEST_IMPL_DIAG_PUSH_IGNORED(w) \
     CTEST_IMPL_PRAGMA(GCC diagnostic ignored "-W" #w)
 #define CTEST_IMPL_DIAG_POP()
+#define __unused
 #endif
 #else
 /* leave them out entirely for non-GNUC compilers  */
 #define CTEST_IMPL_DIAG_PUSH_IGNORED(w)
 #define CTEST_IMPL_DIAG_POP()
-#endif
-
-#if defined(__GNUC__) || defined(__clang__)
-#ifndef __unused
-#define __unused	__attribute__((__unused__))
-#endif
-#else
+#ifdef _MSC_VER >= 1200
 #define __unused
 #endif
-
-#if (__GNUC__ < 4 && __GNUC_MINOR__ < 5) || !defined(__clang__)
-#define __unused
 #endif
 
 CTEST_IMPL_DIAG_PUSH_IGNORED(strict-prototypes)
