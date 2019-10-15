@@ -50,6 +50,12 @@ typedef void (*ctest_teardown_func)(void*);
 #define CTEST_IMPL_DIAG_POP()
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define __unused __attribute__((unused))
+#else
+#define __unused
+#endif
+
 CTEST_IMPL_DIAG_PUSH_IGNORED(strict-prototypes)
 
 struct ctest {
@@ -407,7 +413,7 @@ void assert_fail(const char* caller, int line) {
 }
 
 
-static int suite_all(struct ctest* t __attribute__((unused))) {
+static int suite_all(struct ctest* t __unused) {
     (void) t;
     return 1;
 }
