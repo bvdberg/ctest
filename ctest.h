@@ -407,8 +407,8 @@ void assert_fail(const char* caller, int line) {
 }
 
 
-static int suite_all(struct ctest* t) {
-    (void) t; // fix unused parameter warning
+static int suite_all(struct ctest* t __attribute__((unused))) {
+    (void) t;
     return 1;
 }
 
