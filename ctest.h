@@ -16,6 +16,10 @@
 #ifndef CTEST_H
 #define CTEST_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __GNUC__
 #define CTEST_IMPL_FORMAT_PRINTF(a, b) __attribute__ ((format(printf, a, b)))
 #else
@@ -541,6 +545,10 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
     return num_fail;
 }
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
