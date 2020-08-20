@@ -23,36 +23,73 @@
 #endif
 
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
-#include <stddef.h> /* size_t */
+#include <stddef.h> /* size_t, offsetof */
 
 typedef void (*ctest_setup_func)(void*);
 typedef void (*ctest_teardown_func)(void*);
 
 #define CTEST_IMPL_PRAGMA(x) _Pragma (#x)
 
-#if defined(__GNUC__)
-#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+#define CTEST_IMPL_COMPILER_MINIMUM_VERSION(exp_major, exp_minor, \
+                                            real_major, real_minor) \
+    (((real_major) > (exp_major)) \
+     || ((real_major) == (exp_major) && (real_minor) >= (exp_minor)))
+
+#if defined(__GNUC__) && !defined(__clang__)
+#   define CTEST_IMPL_GCC_MINIMUM_VERSION(major, minor) \
+        CTEST_IMPL_COMPILER_MINIMUM_VERSION(major, minor, \
+                                            __GNUC__, __GNUC_MINOR__)
+#else
+#   define CTEST_IMPL_GCC_MINIMUM_VERSION(major, minor) 0
+#endif
+
+#ifdef __clang__
+#   define CTEST_IMPL_CLANG_MINIMUM_VERSION(major, minor) \
+        CTEST_IMPL_COMPILER_MINIMUM_VERSION(major, minor, \
+                                            __clang_major__, __clang_minor__)
+#else
+#   define CTEST_IMPL_CLANG_MINIMUM_VERSION(major, minor) 0
+#endif
+
+#if CTEST_IMPL_GCC_MINIMUM_VERSION(4, 6) || defined(__clang__)
 /* the GCC argument will work for both gcc and clang  */
 #define CTEST_IMPL_DIAG_PUSH_IGNORED(w) \
     CTEST_IMPL_PRAGMA(GCC diagnostic push) \
     CTEST_IMPL_PRAGMA(GCC diagnostic ignored "-W" #w)
 #define CTEST_IMPL_DIAG_POP() \
     CTEST_IMPL_PRAGMA(GCC diagnostic pop)
-#else
+#elif defined(__GNUC__)
 /* the push/pop functionality wasn't in gcc until 4.6, fallback to "ignored"  */
 #define CTEST_IMPL_DIAG_PUSH_IGNORED(w) \
     CTEST_IMPL_PRAGMA(GCC diagnostic ignored "-W" #w)
 #define CTEST_IMPL_DIAG_POP()
-#endif
 #else
 /* leave them out entirely for non-GNUC compilers  */
 #define CTEST_IMPL_DIAG_PUSH_IGNORED(w)
 #define CTEST_IMPL_DIAG_POP()
 #endif
 
+#if CTEST_IMPL_GCC_MINIMUM_VERSION(4, 8)
+#   define CTEST_IMPL_NO_ASAN_FUNCTION __attribute__ ((no_sanitize_address))
+#   define CTEST_IMPL_NO_ASAN_VARIABLE
+#elif CTEST_IMPL_CLANG_MINIMUM_VERSION(4, 0)
+#   define CTEST_IMPL_NO_ASAN_FUNCTION __attribute__ ((no_sanitize_address))
+#   define CTEST_IMPL_NO_ASAN_VARIABLE __attribute__ ((no_sanitize_address))
+#elif CTEST_IMPL_CLANG_MINIMUM_VERSION(3, 1) && __has_feature(address_sanitizer)
+#   warning "Clang 3.x AddressSanitizer may interfere with ctest, proceed with caution!"
+#   define CTEST_IMPL_NO_ASAN_FUNCTION __attribute__ ((no_sanitize_address))
+#   define CTEST_IMPL_NO_ASAN_VARIABLE
+#   define CTEST_IMPL_CLANG_POISIONED_GLOBALS
+#else
+#   define CTEST_IMPL_NO_ASAN_FUNCTION
+#   define CTEST_IMPL_NO_ASAN_VARIABLE
+#endif
+
 CTEST_IMPL_DIAG_PUSH_IGNORED(strict-prototypes)
 
 struct ctest {
+    unsigned int magic1; // must be first!
+
     const char* ssname;  // suite name
     const char* ttname;  // test name
     void (*run)();
@@ -63,7 +100,7 @@ struct ctest {
 
     int skip;
 
-    unsigned int magic;
+    unsigned int magic2; // must be last!
 };
 
 CTEST_IMPL_DIAG_POP()
@@ -86,7 +123,10 @@ CTEST_IMPL_DIAG_POP()
 #endif
 
 #define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
-    static struct ctest CTEST_IMPL_TNAME(sname, tname) CTEST_IMPL_SECTION = { \
+    CTEST_IMPL_NO_ASAN_VARIABLE \
+    CTEST_IMPL_SECTION \
+    static struct ctest CTEST_IMPL_TNAME(sname, tname) = { \
+        .magic1 = CTEST_IMPL_MAGIC, \
         .ssname=#sname, \
         .ttname=#tname, \
         .run = CTEST_IMPL_FNAME(sname, tname), \
@@ -94,7 +134,8 @@ CTEST_IMPL_DIAG_POP()
         .setup = (ctest_setup_func*) tsetup, \
         .teardown = (ctest_teardown_func*) tteardown, \
         .skip = tskip, \
-        .magic = CTEST_IMPL_MAGIC }
+        .magic2 = CTEST_IMPL_MAGIC, \
+    }
 
 #define CTEST_SETUP(sname) \
     static void CTEST_IMPL_SETUP_FNAME(sname)(struct CTEST_IMPL_DATA_SNAME(sname)* data); \
@@ -188,12 +229,13 @@ void assert_dbl_far(double exp, double real, double tol, const char* caller, int
 
 #include <setjmp.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <wchar.h>
 
 static size_t ctest_errorsize;
@@ -449,9 +491,42 @@ static void sighandler(int signum)
 }
 #endif
 
-int ctest_main(int argc, const char *argv[]);
+#ifdef CTEST_IMPL_CLANG_POISIONED_GLOBALS
+#include <sanitizer/asan_interface.h>
+#endif
 
-__attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[])
+static struct ctest* ctest_adjacent_test(const struct ctest* test,
+                                         int direction, size_t offset)
+{
+    const volatile unsigned int* magic = (const unsigned int*)
+                                         ((const char*)
+                                          (test + direction) + offset);
+
+#if CTEST_IMPL_POISIONED_GLOBALS
+    while (ASAN_UNPOISON_MEMORY_REGION(magic, sizeof(*magic)), *magic == 0) {
+        magic += direction;
+    }
+#endif
+
+CTEST_IMPL_DIAG_PUSH_IGNORED(cast-qual)
+    return *magic == CTEST_IMPL_MAGIC ? (struct ctest*)
+                                        ((char*)magic - offset)
+                                      : NULL;
+CTEST_IMPL_DIAG_POP()
+}
+
+static struct ctest* ctest_next_test(const struct ctest* test)
+{
+    return ctest_adjacent_test(test, 1, offsetof(struct ctest, magic1));
+}
+
+static struct ctest* ctest_prev_test(const struct ctest* test)
+{
+    return ctest_adjacent_test(test, -1, offsetof(struct ctest, magic2));
+}
+
+CTEST_IMPL_NO_ASAN_FUNCTION
+int ctest_main(int argc, const char *argv[])
 {
     static int total = 0;
     static int num_ok = 0;
@@ -476,27 +551,19 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
     uint64_t t1 = getCurrentTime();
 
     struct ctest* ctest_begin = &CTEST_IMPL_TNAME(suite, test);
-    struct ctest* ctest_end = &CTEST_IMPL_TNAME(suite, test);
-    // find begin and end of section by comparing magics
     while (1) {
-        struct ctest* t = ctest_begin-1;
-        if (t->magic != CTEST_IMPL_MAGIC) break;
-        ctest_begin--;
+        struct ctest* t = ctest_prev_test(ctest_begin);
+        if (t == NULL) break;
+        ctest_begin = t;
     }
-    while (1) {
-        struct ctest* t = ctest_end+1;
-        if (t->magic != CTEST_IMPL_MAGIC) break;
-        ctest_end++;
-    }
-    ctest_end++;    // end after last one
 
     static struct ctest* test;
-    for (test = ctest_begin; test != ctest_end; test++) {
+    for (test = ctest_begin; test != NULL; test = ctest_next_test(test)) {
         if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) total++;
     }
 
-    for (test = ctest_begin; test != ctest_end; test++) {
+    for (test = ctest_begin; test != NULL; test = ctest_next_test(test)) {
         if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) {
             ctest_errorbuffer[0] = 0;
