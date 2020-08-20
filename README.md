@@ -1,6 +1,6 @@
 # CTEST
 
-ctest is a unit test framework for software written in C.
+ctest is a unit test framework for software written in C/C++.
 
 Features:
 * adding tests with minimal hassle (no manual adding to suites or testlists!)
