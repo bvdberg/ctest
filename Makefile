@@ -1,5 +1,3 @@
-UNAME=$(shell uname)
-
 CCFLAGS=-Wall -Wextra -Wconversion -Wredundant-decls -Wshadow -Wno-unused-parameter -O3
 CC=clang
 CXX=clang++
