@@ -22,12 +22,6 @@
 #define CTEST_IMPL_FORMAT_PRINTF(a, b)
 #endif
 
-#if defined(__GNUC__) && (__GNUC__ >= 4)
-#define CTEST_UNUSED_VARIABLE __attribute__((unused))
-#else
-#define CTEST_UNUSED_VARIABLE
-#endif
-
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
 #include <stddef.h> /* size_t */
 
@@ -446,8 +440,7 @@ static void sighandler(int signum)
     const char msg_nocolor[] = "[SIGSEGV: Segmentation fault]\n";
 
     const char* msg = color_output ? msg_color : msg_nocolor;
-    ssize_t unused CTEST_UNUSED_VARIABLE;
-    unused = write(STDOUT_FILENO, msg, strlen(msg));
+    if (write(STDOUT_FILENO, msg, strlen(msg))) { /* we don't care if the call fails */ }
 
     /* "Unregister" the signal handler and send the signal back to the process
      * so it can terminate as expected */
