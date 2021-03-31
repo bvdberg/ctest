@@ -179,6 +179,12 @@ void assert_str(const char* exp, const char* real, const char* caller, int line)
 void assert_wstr(const wchar_t *exp, const wchar_t *real, const char* caller, int line);
 #define ASSERT_WSTR(exp, real) assert_wstr(exp, real, __FILE__, __LINE__)
 
+void assert_strstr(const char* haystack, const char* needle, const char* caller, int line);
+#define ASSERT_STRSTR(haystack, needle) assert_strstr(haystack, needle, __FILE__, __LINE__)
+
+void assert_not_strstr(const char* haystack, const char* needle, const char* caller, int line);
+#define ASSERT_NOT_STRSTR(haystack, needle) assert_not_strstr(haystack, needle, __FILE__, __LINE__)
+
 void assert_data(const unsigned char* exp, size_t expsize,
                  const unsigned char* real, size_t realsize,
                  const char* caller, int line);
@@ -345,6 +351,24 @@ void assert_wstr(const wchar_t *exp, const wchar_t *real, const char* caller, in
         (exp != NULL && real == NULL) ||
         (exp && real && wcscmp(exp, real) != 0)) {
         CTEST_ERR("%s:%d  expected '%ls', got '%ls'", caller, line, exp, real);
+    }
+}
+
+void assert_strstr(const char* haystack, const char* needle, const char* caller, int line)
+{
+        if ((haystack == NULL && needle != NULL) ||
+        (haystack != NULL && needle == NULL) ||
+        (haystack && needle && strstr(haystack, needle) == NULL)) {
+        CTEST_ERR("%s:%d  '%s', doesn't cointain '%s'", caller, line, haystack, needle);
+    }
+}
+
+void assert_not_strstr(const char* haystack, const char* needle, const char* caller, int line)
+{
+        if ((haystack == NULL && needle != NULL) ||
+        (haystack != NULL && needle == NULL) ||
+        (haystack && needle && strstr(haystack, needle) != NULL)) {
+        CTEST_ERR("%s:%d  '%s', does cointain '%s'", caller, line, haystack, needle);
     }
 }
 
