@@ -356,19 +356,16 @@ void assert_wstr(const wchar_t *exp, const wchar_t *real, const char* caller, in
 
 void assert_strstr(const char* haystack, const char* needle, const char* caller, int line)
 {
-        if ((haystack == NULL && needle != NULL) ||
-        (haystack != NULL && needle == NULL) ||
+        if ((haystack == NULL) || (needle == NULL) ||
         (haystack && needle && strstr(haystack, needle) == NULL)) {
-        CTEST_ERR("%s:%d  '%s', doesn't cointain '%s'", caller, line, haystack, needle);
+        CTEST_ERR("%s:%d  '%s', doesn't contain '%s'", caller, line, haystack, needle);
     }
 }
 
 void assert_not_strstr(const char* haystack, const char* needle, const char* caller, int line)
 {
-        if ((haystack == NULL && needle != NULL) ||
-        (haystack != NULL && needle == NULL) ||
-        (haystack && needle && strstr(haystack, needle) != NULL)) {
-        CTEST_ERR("%s:%d  '%s', does cointain '%s'", caller, line, haystack, needle);
+        if ((haystack != NULL) && (needle != NULL) && (strstr(haystack, needle) != NULL)) {
+        CTEST_ERR("%s:%d  '%s', does contain '%s'", caller, line, haystack, needle);
     }
 }
 
