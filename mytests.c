@@ -14,6 +14,10 @@ CTEST(suite2, test1) {
     ASSERT_STR("foo", "bar");
 }
 
+CTEST(suite2, test1_d) {
+    ASSERT_STR_D("foo", "bar", "test error");
+}
+
 CTEST(suite3, test3) {
 }
 
@@ -185,9 +189,19 @@ CTEST(ctest, test_dbl_near) {
     ASSERT_DBL_NEAR(0.0001, a);
 }
 
+CTEST(ctest, test_dbl_near_d) {
+    double a = 0.000211;
+    ASSERT_DBL_NEAR_D(0.0001, a, "test error"); /* will fail */
+}
+
 CTEST(ctest, test_dbl_near_tol) {
     double a = 0.000111;
     ASSERT_DBL_NEAR_TOL(0.0001, a, 1e-5); /* will fail */
+}
+
+CTEST(ctest, test_dbl_near_tol_d) {
+    double a = 0.000111;
+    ASSERT_DBL_NEAR_TOL_D(0.0001, a, 1e-5, "test error"); /* will fail */
 }
 
 CTEST(ctest, test_dbl_far) {
