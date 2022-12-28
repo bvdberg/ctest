@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include <inttypes.h> /* intmax_t, uintmax_t, PRI* */
+#include <stdbool.h> /* bool, true, false */
 #include <stddef.h> /* size_t */
 
 typedef void (*ctest_nullary_run_func)(void);
@@ -173,11 +174,17 @@ void CTEST_ERR(const char* fmt, ...) CTEST_IMPL_FORMAT_PRINTF(1, 2);  // doesn't
 #define CTEST2_SKIP(sname, tname) CTEST_IMPL_CTEST2(sname, tname, 1)
 
 
-void assert_str(const char* exp, const char* real, const char* caller, int line);
-#define ASSERT_STR(exp, real) assert_str(exp, real, __FILE__, __LINE__)
+void assert_str(const char* cmp, const char* exp, const char* real, const char* caller, int line);
+#define ASSERT_STR(exp, real) assert_str("==", exp, real, __FILE__, __LINE__)
+#define ASSERT_NOT_STR(exp, real) assert_str("!=", exp, real, __FILE__, __LINE__)
+#define ASSERT_STRSTR(str, substr) assert_str("=~", str, substr, __FILE__, __LINE__)
+#define ASSERT_NOT_STRSTR(str, substr) assert_str("!~", str, substr, __FILE__, __LINE__)
 
-void assert_wstr(const wchar_t *exp, const wchar_t *real, const char* caller, int line);
-#define ASSERT_WSTR(exp, real) assert_wstr(exp, real, __FILE__, __LINE__)
+void assert_wstr(const char* cmp, const wchar_t *exp, const wchar_t *real, const char* caller, int line);
+#define ASSERT_WSTR(exp, real) assert_wstr("==", exp, real, __FILE__, __LINE__)
+#define ASSERT_NOT_WSTR(exp, real) assert_wstr("!=", exp, real, __FILE__, __LINE__)
+#define ASSERT_WSTRSTR(str, substr) assert_wstr("=~", str, substr, __FILE__, __LINE__)
+#define ASSERT_NOT_WSTRSTR(str, substr) assert_wstr("!~", str, substr, __FILE__, __LINE__)
 
 void assert_data(const unsigned char* exp, size_t expsize,
                  const unsigned char* real, size_t realsize,
@@ -185,17 +192,21 @@ void assert_data(const unsigned char* exp, size_t expsize,
 #define ASSERT_DATA(exp, expsize, real, realsize) \
     assert_data(exp, expsize, real, realsize, __FILE__, __LINE__)
 
-void assert_equal(intmax_t exp, intmax_t real, const char* caller, int line);
-#define ASSERT_EQUAL(exp, real) assert_equal(exp, real, __FILE__, __LINE__)
+#define CTEST_FLT_EPSILON 1e-5
+#define CTEST_DBL_EPSILON 1e-12
 
-void assert_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line);
-#define ASSERT_EQUAL_U(exp, real) assert_equal_u(exp, real, __FILE__, __LINE__)
+void assert_compare(const char* cmp, intmax_t exp, intmax_t real, const char* caller, int line);
+#define ASSERT_EQUAL(exp, real) assert_compare("==", exp, real, __FILE__, __LINE__)
+#define ASSERT_NOT_EQUAL(exp, real) assert_compare("!=", exp, real, __FILE__, __LINE__)
 
-void assert_not_equal(intmax_t exp, intmax_t real, const char* caller, int line);
-#define ASSERT_NOT_EQUAL(exp, real) assert_not_equal(exp, real, __FILE__, __LINE__)
+#define ASSERT_LT(v1, v2) assert_compare("<", v1, v2, __FILE__, __LINE__)
+#define ASSERT_LE(v1, v2) assert_compare("<=", v1, v2, __FILE__, __LINE__)
+#define ASSERT_GT(v1, v2) assert_compare(">", v1, v2, __FILE__, __LINE__)
+#define ASSERT_GE(v1, v2) assert_compare(">=", v1, v2, __FILE__, __LINE__)
 
-void assert_not_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line);
-#define ASSERT_NOT_EQUAL_U(exp, real) assert_not_equal_u(exp, real, __FILE__, __LINE__)
+void assert_compare_u(const char* cmp, uintmax_t exp, uintmax_t real, const char* caller, int line);
+#define ASSERT_EQUAL_U(exp, real) assert_compare_u("==", exp, real, __FILE__, __LINE__)
+#define ASSERT_NOT_EQUAL_U(exp, real) assert_compare_u("!=", exp, real, __FILE__, __LINE__)
 
 void assert_interval(intmax_t exp1, intmax_t exp2, intmax_t real, const char* caller, int line);
 #define ASSERT_INTERVAL(exp1, exp2, real) assert_interval(exp1, exp2, real, __FILE__, __LINE__)
@@ -215,13 +226,16 @@ void assert_false(int real, const char* caller, int line);
 void assert_fail(const char* caller, int line);
 #define ASSERT_FAIL() assert_fail(__FILE__, __LINE__)
 
-void assert_dbl_near(double exp, double real, double tol, const char* caller, int line);
-#define ASSERT_DBL_NEAR(exp, real) assert_dbl_near(exp, real, 1e-4, __FILE__, __LINE__)
-#define ASSERT_DBL_NEAR_TOL(exp, real, tol) assert_dbl_near(exp, real, tol, __FILE__, __LINE__)
+void assert_dbl_compare(const char* cmp, double exp, double real, double tol, const char* caller, int line);
+#define ASSERT_DBL_NEAR(exp, real) assert_dbl_compare("==", exp, real, -CTEST_DBL_EPSILON, __FILE__, __LINE__)
+#define ASSERT_DBL_NEAR_TOL(exp, real, tol) assert_dbl_compare("==", exp, real, tol, __FILE__, __LINE__)
+#define ASSERT_DBL_FAR(exp, real) assert_dbl_compare("!=", exp, real, -CTEST_DBL_EPSILON, __FILE__, __LINE__)
+#define ASSERT_DBL_FAR_TOL(exp, real, tol) assert_dbl_compare("!=", exp, real, tol, __FILE__, __LINE__)
 
-void assert_dbl_far(double exp, double real, double tol, const char* caller, int line);
-#define ASSERT_DBL_FAR(exp, real) assert_dbl_far(exp, real, 1e-4, __FILE__, __LINE__)
-#define ASSERT_DBL_FAR_TOL(exp, real, tol) assert_dbl_far(exp, real, tol, __FILE__, __LINE__)
+#define ASSERT_FLT_NEAR(v1, v2) assert_dbl_compare("==", v1, v2, -CTEST_FLT_EPSILON, __FILE__, __LINE__)
+#define ASSERT_FLT_FAR(v1, v2) assert_dbl_compare("!=", v1, v2, -CTEST_FLT_EPSILON, __FILE__, __LINE__)
+#define ASSERT_DBL_LT(v1, v2) assert_dbl_compare("<", v1, v2, 0.0, __FILE__, __LINE__)
+#define ASSERT_DBL_GT(v1, v2) assert_dbl_compare(">", v1, v2, 0.0, __FILE__, __LINE__)
 
 #ifdef CTEST_MAIN
 
@@ -332,19 +346,21 @@ void CTEST_ERR(const char* fmt, ...)
 
 CTEST_IMPL_DIAG_POP()
 
-void assert_str(const char* exp, const char*  real, const char* caller, int line) {
-    if ((exp == NULL && real != NULL) ||
-        (exp != NULL && real == NULL) ||
-        (exp && real && strcmp(exp, real) != 0)) {
-        CTEST_ERR("%s:%d  expected '%s', got '%s'", caller, line, exp, real);
+void assert_str(const char* cmp, const char* exp, const char*  real, const char* caller, int line) {
+    if ((!exp ^ !real) || (exp && (
+        (cmp[1] == '=' && ((cmp[0] == '=') ^ (strcmp(exp, real) == 0))) ||
+        (cmp[1] == '~' && ((cmp[0] == '=') ^ (strstr(exp, real) != NULL)))
+    ))) {
+        CTEST_ERR("%s:%d  assertion failed, '%s' %s '%s'", caller, line, exp, cmp, real);
     }
 }
 
-void assert_wstr(const wchar_t *exp, const wchar_t *real, const char* caller, int line) {
-    if ((exp == NULL && real != NULL) ||
-        (exp != NULL && real == NULL) ||
-        (exp && real && wcscmp(exp, real) != 0)) {
-        CTEST_ERR("%s:%d  expected '%ls', got '%ls'", caller, line, exp, real);
+void assert_wstr(const char* cmp, const wchar_t *exp, const wchar_t *real, const char* caller, int line) {
+    if ((!exp ^ !real) || (exp && (
+        (cmp[1] == '=' && ((cmp[0] == '=') ^ (wcscmp(exp, real) == 0))) ||
+        (cmp[1] == '~' && ((cmp[0] == '=') ^ (wcsstr(exp, real) != NULL)))
+    ))) {
+        CTEST_ERR("%s:%d  assertion failed, '%ls' %s '%ls'", caller, line, exp, cmp, real);
     }
 }
 
@@ -363,27 +379,35 @@ void assert_data(const unsigned char* exp, size_t expsize,
     }
 }
 
-void assert_equal(intmax_t exp, intmax_t real, const char* caller, int line) {
-    if (exp != real) {
-        CTEST_ERR("%s:%d  expected %" PRIdMAX ", got %" PRIdMAX, caller, line, exp, real);
-    }
+bool get_compare_result(const char* cmp, int c3, bool eq) {
+    if (cmp[0] == '<')
+        return c3 < 0 || ((cmp[1] == '=') & eq);
+    if (cmp[0] == '>')
+        return c3 > 0 || ((cmp[1] == '=') & eq);
+    return (cmp[0] == '=') == eq;
 }
 
-void assert_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line) {
-    if (exp != real) {
-        CTEST_ERR("%s:%d  expected %" PRIuMAX ", got %" PRIuMAX, caller, line, exp, real);
-    }
+bool approximately_equal(double a, double b, double epsilon) {
+    double d = a - b; 
+    if (d < 0) d = -d;
+    if (a < 0) a = -a;
+    if (b < 0) b = -b;
+    return d <= (a > b ? a : b)*epsilon;     /* D.Knuth */
 }
 
-void assert_not_equal(intmax_t exp, intmax_t real, const char* caller, int line) {
-    if ((exp) == (real)) {
-        CTEST_ERR("%s:%d  should not be %" PRIdMAX, caller, line, real);
+void assert_compare(const char* cmp, intmax_t exp, intmax_t real, const char* caller, int line) {
+    int c3 = (real < exp) - (exp < real);
+
+    if (!get_compare_result(cmp, c3, c3 == 0)) {
+        CTEST_ERR("%s:%d  assertion failed, %" PRIdMAX " %s %" PRIdMAX "", caller, line, exp, cmp, real);
     }
 }
+/* this fn. is only useful when values can be > INTMAX_MAX. also not needed for (in)equality cmp. */
+void assert_compare_u(const char* cmp, uintmax_t exp, uintmax_t real, const char* caller, int line) {
+    int c3 = (real < exp) - (exp < real);
 
-void assert_not_equal_u(uintmax_t exp, uintmax_t real, const char* caller, int line) {
-    if ((exp) == (real)) {
-        CTEST_ERR("%s:%d  should not be %" PRIuMAX, caller, line, real);
+    if (!get_compare_result(cmp, c3, c3 == 0)) {
+        CTEST_ERR("%s:%d  assertion failed, %" PRIuMAX " %s %" PRIuMAX, caller, line, exp, cmp, real);
     }
 }
 
@@ -393,27 +417,20 @@ void assert_interval(intmax_t exp1, intmax_t exp2, intmax_t real, const char* ca
     }
 }
 
-void assert_dbl_near(double exp, double real, double tol, const char* caller, int line) {
+/* tol < 0 means it is an epsilon, else absolute error */
+void assert_dbl_compare(const char* cmp, double exp, double real, double tol, const char* caller, int line) {
     double diff = exp - real;
-    double absdiff = diff;
-    /* avoid using fabs and linking with a math lib */
-    if(diff < 0) {
-      absdiff *= -1;
-    }
-    if (absdiff > tol) {
-        CTEST_ERR("%s:%d  expected %0.3e, got %0.3e (diff %0.3e, tol %0.3e)", caller, line, exp, real, diff, tol);
-    }
-}
+    double absdiff = diff < 0 ? -diff : diff;
+    int c3 = (real < exp) - (exp < real);
+    bool eq = tol < 0 ? approximately_equal(exp, real, -tol) : absdiff <= tol;
 
-void assert_dbl_far(double exp, double real, double tol, const char* caller, int line) {
-    double diff = exp - real;
-    double absdiff = diff;
-    /* avoid using fabs and linking with a math lib */
-    if(diff < 0) {
-      absdiff *= -1;
-    }
-    if (absdiff <= tol) {
-        CTEST_ERR("%s:%d  expected %0.3e, got %0.3e (diff %0.3e, tol %0.3e)", caller, line, exp, real, diff, tol);
+    if (!get_compare_result(cmp, c3, eq)) {
+        const char* tolstr = "tol";
+        if (tol < 0) {
+            tolstr = "eps";
+            tol = -tol;
+        }
+        CTEST_ERR("%s:%d  assertion failed, %.8g %s %.8g (diff %.4g, %s %.4g)", caller, line, exp, cmp, real, diff, tolstr, tol);
     }
 }
 
