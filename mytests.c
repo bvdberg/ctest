@@ -195,3 +195,28 @@ CTEST(ctest, test_dbl_far) {
     ASSERT_DBL_FAR(1., a);
     ASSERT_DBL_FAR_TOL(1., a, 0.01);
 }
+
+CTEST(ctest, test_assert_compare) {
+    ASSERT_LT(123, 456);
+    ASSERT_GE(123, 123);
+    ASSERT_GT(99, 100);
+}
+
+CTEST(ctest, test_dbl_near2) {
+    float a = 0.000001000003f;
+    ASSERT_FLT_NEAR(0.000001f, a);  /* ok, uses float epsilon -1e-5 */
+    ASSERT_DBL_NEAR_TOL(0.000001, a, -1e-5); /* ok, tol < 0 = relative err (epsilon) */
+    ASSERT_DBL_NEAR(0.000001, a);  /* fail, tol = -1e-12 (epsilon) */
+}
+
+CTEST(ctest, test_dbl_compare) {
+    float a = 0.000001000003f;
+    ASSERT_DBL_LT(0.000001, a);
+    ASSERT_DBL_GT(0.000001, a);  /* fail */
+}
+
+CTEST(ctest, test_str_contains) {
+    ASSERT_NOT_STR("Hello", "World");
+    ASSERT_STRSTR("Hello", "ello");
+    ASSERT_NOT_STRSTR("Hello", "ello");
+}
