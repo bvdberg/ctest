@@ -379,20 +379,12 @@ void assert_data(const unsigned char* exp, size_t expsize,
     }
 }
 
-bool get_compare_result(const char* cmp, int c3, bool eq) {
+static bool get_compare_result(const char* cmp, int c3, bool eq) {
     if (cmp[0] == '<')
         return c3 < 0 || ((cmp[1] == '=') & eq);
     if (cmp[0] == '>')
         return c3 > 0 || ((cmp[1] == '=') & eq);
     return (cmp[0] == '=') == eq;
-}
-
-bool approximately_equal(double a, double b, double epsilon) {
-    double d = a - b; 
-    if (d < 0) d = -d;
-    if (a < 0) a = -a;
-    if (b < 0) b = -b;
-    return d <= (a > b ? a : b)*epsilon;     /* D.Knuth */
 }
 
 void assert_compare(const char* cmp, intmax_t exp, intmax_t real, const char* caller, int line) {
@@ -415,6 +407,14 @@ void assert_interval(intmax_t exp1, intmax_t exp2, intmax_t real, const char* ca
     if (real < exp1 || real > exp2) {
         CTEST_ERR("%s:%d  expected %" PRIdMAX "-%" PRIdMAX ", got %" PRIdMAX, caller, line, exp1, exp2, real);
     }
+}
+
+static bool approximately_equal(double a, double b, double epsilon) {
+    double d = a - b;
+    if (d < 0) d = -d;
+    if (a < 0) a = -a;
+    if (b < 0) b = -b;
+    return d <= (a > b ? a : b)*epsilon;     /* D.Knuth */
 }
 
 /* tol < 0 means it is an epsilon, else absolute error */
