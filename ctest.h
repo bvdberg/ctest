@@ -243,8 +243,13 @@ void assert_dbl_compare(const char* cmp, double exp, double real, double tol, co
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
+#include <time.h>
+#if !defined(_WIN32) || defined(__GNUC__)
 #include <unistd.h>
+#elif defined(_WIN32)
+#include <io.h>
+#include <process.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 #include <wchar.h>
@@ -472,15 +477,6 @@ static int suite_filter(struct ctest* t) {
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
-static uint64_t getCurrentTime(void) {
-    struct timeval now;
-    gettimeofday(&now, NULL);
-    uint64_t now64 = (uint64_t) now.tv_sec;
-    now64 *= 1000000;
-    now64 += ((uint64_t) now.tv_usec);
-    return now64;
-}
-
 static void color_print(const char* color, const char* text) {
     if (color_output)
         printf("%s%s" ANSI_NORMAL "\n", color, text);
@@ -501,7 +497,9 @@ static void sighandler(int signum)
     /* "Unregister" the signal handler and send the signal back to the process
      * so it can terminate as expected */
     signal(signum, SIG_DFL);
+#if !defined(_WIN32) || defined(__CYGWIN__)
     kill(getpid(), signum);
+#endif
 }
 #endif
 
@@ -529,7 +527,7 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
 #else
     color_output = isatty(1);
 #endif
-    uint64_t t1 = getCurrentTime();
+    uint64_t t1 = clock();
 
     struct ctest* ctest_begin = &CTEST_IMPL_TNAME(suite, test);
     struct ctest* ctest_end = &CTEST_IMPL_TNAME(suite, test);
@@ -588,11 +586,11 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
             idx++;
         }
     }
-    uint64_t t2 = getCurrentTime();
+    uint64_t t2 = clock();
 
     const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
     char results[80];
-    snprintf(results, sizeof(results), "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %" PRIu64 " ms", total, num_ok, num_fail, num_skip, (t2 - t1)/1000);
+    snprintf(results, sizeof(results), "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %" PRIu64 " ms", total, num_ok, num_fail, num_skip, (t2 - t1)*1000/CLOCKS_PER_SEC);
     color_print(color, results);
     return num_fail;
 }
