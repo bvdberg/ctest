@@ -399,7 +399,7 @@ void assert_compare(const char* cmp, intmax_t exp, intmax_t real, const char* ca
         CTEST_ERR("%s:%d  assertion failed, %" PRIdMAX " %s %" PRIdMAX "", caller, line, exp, cmp, real);
     }
 }
-/* this fn. is only useful when values can be > INTMAX_MAX. also not needed for (in)equality cmp. */
+
 void assert_compare_u(const char* cmp, uintmax_t exp, uintmax_t real, const char* caller, int line) {
     int c3 = (real < exp) - (exp < real);
 
