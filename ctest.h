@@ -248,7 +248,6 @@ void assert_dbl_compare(const char* cmp, double exp, double real, double tol, co
 #include <unistd.h>
 #elif defined(_WIN32)
 #include <io.h>
-#include <process.h>
 #endif
 #include <stdint.h>
 #include <stdlib.h>
@@ -492,7 +491,7 @@ static void sighandler(int signum)
     const char msg_nocolor[] = "[SIGSEGV: Segmentation fault]\n";
 
     const char* msg = color_output ? msg_color : msg_nocolor;
-    write(STDOUT_FILENO, msg, strlen(msg));
+    write(STDOUT_FILENO, msg, (unsigned int)strlen(msg));
 
     /* "Unregister" the signal handler and send the signal back to the process
      * so it can terminate as expected */
@@ -527,7 +526,7 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
 #else
     color_output = isatty(1);
 #endif
-    uint64_t t1 = clock();
+    clock_t t1 = clock();
 
     struct ctest* ctest_begin = &CTEST_IMPL_TNAME(suite, test);
     struct ctest* ctest_end = &CTEST_IMPL_TNAME(suite, test);
@@ -586,11 +585,11 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
             idx++;
         }
     }
-    uint64_t t2 = clock();
+    clock_t t2 = clock();
 
     const char* color = (num_fail) ? ANSI_BRED : ANSI_GREEN;
     char results[80];
-    snprintf(results, sizeof(results), "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %" PRIu64 " ms", total, num_ok, num_fail, num_skip, (t2 - t1)*1000/CLOCKS_PER_SEC);
+    snprintf(results, sizeof(results), "RESULTS: %d tests (%d ok, %d failed, %d skipped) ran in %.1f ms", total, num_ok, num_fail, num_skip, (t2 - t1)*1000.0/CLOCKS_PER_SEC);
     color_print(color, results);
     return num_fail;
 }
