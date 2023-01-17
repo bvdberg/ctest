@@ -41,6 +41,8 @@ union ctest_run_func_union {
 };
 
 #define CTEST_IMPL_PRAGMA(x) _Pragma (#x)
+#define CTEST_CONTAINER_OF(p, T, m) \
+    ((T*)((char*)(p) + 0*sizeof((p) == &((T*)0)->m) - offsetof(T, m)))
 
 #if defined(__GNUC__)
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
@@ -528,28 +530,29 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
 #endif
     clock_t t1 = clock();
 
-    struct ctest* ctest_begin = &CTEST_IMPL_TNAME(suite, test);
-    struct ctest* ctest_end = &CTEST_IMPL_TNAME(suite, test);
-    // find begin and end of section by comparing magics
-    while (1) {
-        struct ctest* t = ctest_begin-1;
-        if (t->magic != CTEST_IMPL_MAGIC) break;
-        ctest_begin--;
-    }
-    while (1) {
-        struct ctest* t = ctest_end+1;
-        if (t->magic != CTEST_IMPL_MAGIC) break;
-        ctest_end++;
-    }
-    ctest_end++;    // end after last one
+    unsigned* magic_begin = &CTEST_IMPL_TNAME(suite, test).magic;
+    unsigned *magic_end = magic_begin, *m;
+    size_t smax = 8 + sizeof(struct ctest)/sizeof *m;
+
+    for (m = magic_begin - 1; magic_begin - m < smax; --m)
+        if (*m == CTEST_IMPL_MAGIC)
+            magic_begin = m;
+
+    for (m = magic_end + 1; m - magic_end < smax; ++m)
+        if (*m == CTEST_IMPL_MAGIC)
+            magic_end = m;
 
     static struct ctest* test;
-    for (test = ctest_begin; test != ctest_end; test++) {
+        for (m = magic_begin; m <= magic_end; ++m) {
+        while (*m != CTEST_IMPL_MAGIC) ++m;
+        test = CTEST_CONTAINER_OF(m, struct ctest, magic);
         if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) total++;
     }
 
-    for (test = ctest_begin; test != ctest_end; test++) {
+    for (m = magic_begin; m <= magic_end; ++m) {
+        while (*m != CTEST_IMPL_MAGIC) ++m;
+        test = CTEST_CONTAINER_OF(m, struct ctest, magic);
         if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) {
             ctest_errorbuffer[0] = 0;
