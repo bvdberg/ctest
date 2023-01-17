@@ -543,7 +543,7 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
             magic_end = m;
 
     static struct ctest* test;
-        for (m = magic_begin; m <= magic_end; ++m) {
+    for (m = magic_begin; m <= magic_end; ++m) {
         while (*m != CTEST_IMPL_MAGIC) ++m;
         test = CTEST_CONTAINER_OF(m, struct ctest, magic);
         if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
