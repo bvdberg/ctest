@@ -539,14 +539,13 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
             m -= iskip - 1;
         }
     }
-    /* Better not search as it does not appear needed, and minimize accessing illegal memory.
-    if (magic_begin == magic_end) for (m = magic_end; m - magic_end <= iskip + 8; ++m) {
+    for (m = magic_end; m - magic_end <= iskip + 8; ++m) {
         if (*m == CTEST_IMPL_MAGIC) {
-            magic_begin = m;
+            magic_end = m;
             m += iskip - 1;
         }
     }
-    */
+
     static struct ctest* test;
     for (m = magic_begin; m <= magic_end; m += iskip) {
         while (*m != CTEST_IMPL_MAGIC) ++m;
