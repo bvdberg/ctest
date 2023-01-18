@@ -73,9 +73,8 @@ struct ctest {
     ctest_setup_func* setup;
     ctest_teardown_func* teardown;
 
-    int skip;
-
-    unsigned int magic;
+    int32_t skip;
+    uint32_t magic;
 };
 
 #define CTEST_IMPL_NAME(name) ctest_##name
@@ -530,27 +529,33 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
 #endif
     clock_t t1 = clock();
 
-    unsigned* magic_begin = &CTEST_IMPL_TNAME(suite, test).magic;
-    unsigned *magic_end = magic_begin, *m;
-    size_t smax = 8 + sizeof(struct ctest)/sizeof *m;
+    uint32_t* magic_begin = &CTEST_IMPL_TNAME(suite, test).magic;
+    uint32_t *magic_end = magic_begin, *m;
+    size_t iskip = sizeof(struct ctest)/sizeof *m;
 
-    for (m = magic_begin - 1; magic_begin - m < smax; --m)
-        if (*m == CTEST_IMPL_MAGIC)
+    for (m = magic_begin; magic_begin - m <= iskip + 8; --m) {
+        if (*m == CTEST_IMPL_MAGIC) {
             magic_begin = m;
-
-    for (m = magic_end + 1; m - magic_end < smax; ++m)
-        if (*m == CTEST_IMPL_MAGIC)
-            magic_end = m;
-
+            m -= iskip - 1;
+        }
+    }
+    /* Better not search as it does not appear needed, and minimize accessing illegal memory.
+    if (magic_begin == magic_end) for (m = magic_end; m - magic_end <= iskip + 8; ++m) {
+        if (*m == CTEST_IMPL_MAGIC) {
+            magic_begin = m;
+            m += iskip - 1;
+        }
+    }
+    */
     static struct ctest* test;
-    for (m = magic_begin; m <= magic_end; ++m) {
+    for (m = magic_begin; m <= magic_end; m += iskip) {
         while (*m != CTEST_IMPL_MAGIC) ++m;
         test = CTEST_CONTAINER_OF(m, struct ctest, magic);
         if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) total++;
     }
 
-    for (m = magic_begin; m <= magic_end; ++m) {
+    for (m = magic_begin; m <= magic_end; m += iskip) {
         while (*m != CTEST_IMPL_MAGIC) ++m;
         test = CTEST_CONTAINER_OF(m, struct ctest, magic);
         if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
