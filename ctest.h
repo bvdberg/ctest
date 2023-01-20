@@ -65,6 +65,8 @@ union ctest_run_func_union {
 #endif
 
 struct ctest {
+    uint32_t magic0, padding;
+
     const char* ssname;  // suite name
     const char* ttname;  // test name
     union ctest_run_func_union run;
@@ -74,7 +76,7 @@ struct ctest {
     ctest_teardown_func* teardown;
 
     int32_t skip;
-    uint32_t magic;
+    uint32_t magic1;
 };
 
 #define CTEST_IMPL_NAME(name) ctest_##name
@@ -89,7 +91,6 @@ struct ctest {
 #define CTEST_IMPL_TEARDOWN_FPNAME(sname) CTEST_IMPL_NAME(sname##_teardown_ptr)
 #define CTEST_IMPL_TEARDOWN_TPNAME(sname, tname) CTEST_IMPL_NAME(sname##_##tname##_teardown_ptr)
 
-#define CTEST_IMPL_MAGIC (0xdeadbeef)
 #ifdef __APPLE__
 #define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(1)))
 #else
@@ -98,6 +99,7 @@ struct ctest {
 
 #define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
     static struct ctest CTEST_IMPL_TNAME(sname, tname) CTEST_IMPL_SECTION = { \
+        0xBADFEED0, 0, \
         #sname, \
         #tname, \
         { (ctest_nullary_run_func) CTEST_IMPL_FNAME(sname, tname) }, \
@@ -105,7 +107,7 @@ struct ctest {
         (ctest_setup_func*) tsetup, \
         (ctest_teardown_func*) tteardown, \
         tskip, \
-        CTEST_IMPL_MAGIC, \
+        0xBADFEED1, \
     }
 
 #ifdef __cplusplus
@@ -529,34 +531,40 @@ __attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[]
 #endif
     clock_t t1 = clock();
 
-    uint32_t* magic_begin = &CTEST_IMPL_TNAME(suite, test).magic;
-    uint32_t *magic_end = magic_begin, *m;
+    uint32_t* magic_begin = &CTEST_IMPL_TNAME(suite, test).magic1;
+    uint32_t* magic_end = &CTEST_IMPL_TNAME(suite, test).magic0, *m;
     size_t iskip = sizeof(struct ctest)/sizeof *m;
 
-    for (m = magic_begin; magic_begin - m <= iskip + 8; --m) {
-        if (*m == CTEST_IMPL_MAGIC) {
+#if (defined __TINYC__ && defined __unix__)
+    #define CTEST_PEEK 12 /* search 4*(1+12) bytes outside ctest entry bounds */
+#else
+    #define CTEST_PEEK 0 /* access only 4 bytes outside outer ctest entry bounds */
+#endif
+    for (m = magic_begin; magic_begin - m <= iskip + CTEST_PEEK; --m) {
+        if (*m == 0xBADFEED1) {
             magic_begin = m;
             m -= iskip - 1;
         }
     }
-    for (m = magic_end; m - magic_end <= iskip + 8; ++m) {
-        if (*m == CTEST_IMPL_MAGIC) {
+    for (m = magic_end; m - magic_end <= iskip + CTEST_PEEK; ++m) {
+        if (*m == 0xBADFEED0) {
             magic_end = m;
             m += iskip - 1;
         }
     }
+    magic_begin = &CTEST_CONTAINER_OF(magic_begin, struct ctest, magic1)->magic0;
 
     static struct ctest* test;
     for (m = magic_begin; m <= magic_end; m += iskip) {
-        while (*m != CTEST_IMPL_MAGIC) ++m;
-        test = CTEST_CONTAINER_OF(m, struct ctest, magic);
+        while (*m != 0xBADFEED0) ++m;
+        test = CTEST_CONTAINER_OF(m, struct ctest, magic0);
         if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) total++;
     }
 
     for (m = magic_begin; m <= magic_end; m += iskip) {
-        while (*m != CTEST_IMPL_MAGIC) ++m;
-        test = CTEST_CONTAINER_OF(m, struct ctest, magic);
+        while (*m != 0xBADFEED0) ++m;
+        test = CTEST_CONTAINER_OF(m, struct ctest, magic0);
         if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
         if (filter(test)) {
             ctest_errorbuffer[0] = 0;
