@@ -13,28 +13,6 @@
  * limitations under the License.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <stdarg.h>
-#include <stdio.h>
-
-static char *CTEST_DESCRIPTION_FORMAT(char *buf, size_t n, const char* const fmt, ...) {
-    if (buf) {
-        buf[0] = '\0';
-        va_list argp;
-        va_start(argp, fmt);
-        vsnprintf(buf, n, fmt, argp);
-        va_end(argp);
-    }
-    return buf;
-}
-
-#ifdef __cplusplus
-}
-#endif
-
 #ifndef CTEST_H
 #define CTEST_H
 
@@ -589,7 +567,8 @@ static void sighandler(int signum)
     const char msg_nocolor[] = "[SIGSEGV: Segmentation fault]\n";
 
     const char* msg = color_output ? msg_color : msg_nocolor;
-    write(STDOUT_FILENO, msg, (unsigned int)strlen(msg));
+    ssize_t n __attribute__((unused));
+    n = write(STDOUT_FILENO, msg, (unsigned int)strlen(msg));
 
     /* "Unregister" the signal handler and send the signal back to the process
      * so it can terminate as expected */

@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include "ctest.h"
+#include "ctest_fmt.h"
 
 static char buf[1024];
 
