@@ -19,8 +19,14 @@ Features:
 
 ## test example
 ```c
+
+static char buf[1024];
+
 CTEST(suite, test1) {
     ASSERT_STR("foo", "foo");
+    ASSERT_STR_D("foo", "foo", "msg");
+    // assert with description message
+    ASSERT_STR_D("foo", "foo", CTEST_DESCRIPTION_FORMAT(buf, sizeof(buf), "%s %s", "formatted", "message"));
 }
 
 CTEST(suite, test2) {
