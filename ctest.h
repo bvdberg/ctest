@@ -208,6 +208,11 @@ void assert_compare_u(const char* cmp, uintmax_t exp, uintmax_t real, const char
 #define ASSERT_EQUAL_U(exp, real) assert_compare_u("==", exp, real, __FILE__, __LINE__)
 #define ASSERT_NOT_EQUAL_U(exp, real) assert_compare_u("!=", exp, real, __FILE__, __LINE__)
 
+#define ASSERT_LT_U(v1, v2) assert_compare_u("<", v1, v2, __FILE__, __LINE__)
+#define ASSERT_LE_U(v1, v2) assert_compare_u("<=", v1, v2, __FILE__, __LINE__)
+#define ASSERT_GT_U(v1, v2) assert_compare_u(">", v1, v2, __FILE__, __LINE__)
+#define ASSERT_GE_U(v1, v2) assert_compare_u(">=", v1, v2, __FILE__, __LINE__)
+
 void assert_interval(intmax_t exp1, intmax_t exp2, intmax_t real, const char* caller, int line);
 #define ASSERT_INTERVAL(exp1, exp2, real) assert_interval(exp1, exp2, real, __FILE__, __LINE__)
 
