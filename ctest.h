@@ -186,6 +186,12 @@ void assert_wstr(const char* cmp, const wchar_t *exp, const wchar_t *real, const
 #define ASSERT_WSTRSTR(str, substr) assert_wstr("=~", str, substr, __FILE__, __LINE__)
 #define ASSERT_NOT_WSTRSTR(str, substr) assert_wstr("!~", str, substr, __FILE__, __LINE__)
 
+void assert_strstr(const char* haystack, const char* needle, const char* caller, int line);
+#define ASSERT_STRSTR(haystack, needle) assert_strstr(haystack, needle, __FILE__, __LINE__)
+
+void assert_not_strstr(const char* haystack, const char* needle, const char* caller, int line);
+#define ASSERT_NOT_STRSTR(haystack, needle) assert_not_strstr(haystack, needle, __FILE__, __LINE__)
+
 void assert_data(const unsigned char* exp, size_t expsize,
                  const unsigned char* real, size_t realsize,
                  const char* caller, int line);
@@ -370,6 +376,21 @@ void assert_wstr(const char* cmp, const wchar_t *exp, const wchar_t *real, const
         (cmp[1] == '~' && ((cmp[0] == '=') ^ (wcsstr(exp, real) != NULL)))
     ))) {
         CTEST_ERR("%s:%d  assertion failed, '%ls' %s '%ls'", caller, line, exp, cmp, real);
+    }
+}
+
+void assert_strstr(const char* haystack, const char* needle, const char* caller, int line)
+{
+        if ((haystack == NULL) || (needle == NULL) ||
+        (haystack && needle && strstr(haystack, needle) == NULL)) {
+        CTEST_ERR("%s:%d  '%s', doesn't contain '%s'", caller, line, haystack, needle);
+    }
+}
+
+void assert_not_strstr(const char* haystack, const char* needle, const char* caller, int line)
+{
+        if ((haystack != NULL) && (needle != NULL) && (strstr(haystack, needle) != NULL)) {
+        CTEST_ERR("%s:%d  '%s', does contain '%s'", caller, line, haystack, needle);
     }
 }
 
