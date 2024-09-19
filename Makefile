@@ -1,6 +1,7 @@
-CCFLAGS=-Wall -Wextra -Wconversion -Wredundant-decls -Wshadow -Wno-unused-parameter -O3
+CFLAGS=-Wall -Wextra -Wconversion -Wredundant-decls -Wshadow -Wno-unused-parameter -O3 -std=c99
 CC=clang
 CXX=clang++
+CXXFLAGS=-Wall -Wextra -Wconversion -Wredundant-decls -Wshadow -Wno-unused-parameter -O3
 
 all: test test++
 
@@ -10,10 +11,10 @@ remake: clean all
 	ln -fs $< $@
 
 %.c.o: %.c ctest.h
-	$(CC) $(CCFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 %.cpp.o: %.cpp ctest.h
-	$(CXX) $(CCFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 test: main.c.o ctest.h mytests.c.o
 	$(CC) $(LDFLAGS) main.c.o mytests.c.o -o test

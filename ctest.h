@@ -490,6 +490,11 @@ static void color_print(const char* color, const char* text) {
 
 #ifdef CTEST_SEGFAULT
 #include <signal.h>
+#if !defined(_WIN32) || defined(__CYGWIN__)
+// kill has no nice include somehow
+#include <sys/types.h>
+int kill(pid_t pid, int sig);
+#endif
 static void sighandler(int signum)
 {
     const char msg_color[] = ANSI_BRED "[SIGSEGV: Segmentation fault]" ANSI_NORMAL "\n";
