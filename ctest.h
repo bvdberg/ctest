@@ -186,6 +186,10 @@ void assert_wstr(const char* cmp, const wchar_t *exp, const wchar_t *real, const
 #define ASSERT_WSTRSTR(str, substr) assert_wstr("=~", str, substr, __FILE__, __LINE__)
 #define ASSERT_NOT_WSTRSTR(str, substr) assert_wstr("!~", str, substr, __FILE__, __LINE__)
 
+void assert_wstr(const wchar_t *exp, const wchar_t *real, const char* caller, int line);
+#define ASSERT_WSTR(exp, real) assert_wstr(exp, real, __FILE__, __LINE__)
+
+
 void assert_data(const unsigned char* exp, size_t expsize,
                  const unsigned char* real, size_t realsize,
                  const char* caller, int line);
@@ -370,6 +374,14 @@ void assert_wstr(const char* cmp, const wchar_t *exp, const wchar_t *real, const
         (cmp[1] == '~' && ((cmp[0] == '=') ^ (wcsstr(exp, real) != NULL)))
     ))) {
         CTEST_ERR("%s:%d  assertion failed, '%ls' %s '%ls'", caller, line, exp, cmp, real);
+    }
+}
+
+void assert_wstr(const wchar_t *exp, const wchar_t *real, const char* caller, int line) {
+    if ((exp == NULL && real != NULL) ||
+        (exp != NULL && real == NULL) ||
+        (exp && real && wcscmp(exp, real) != 0)) {
+        CTEST_ERR("%s:%d  expected '%ls', got '%ls'", caller, line, exp, real);
     }
 }
 
