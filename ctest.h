@@ -90,9 +90,9 @@ struct ctest {
 
 #define CTEST_IMPL_MAGIC (0xdeadbeef)
 #ifdef __APPLE__
-#define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(8)))
+#define CTEST_IMPL_SECTION __attribute__ ((used, section ("__DATA, .ctest"), aligned(8), no_sanitize("address")))
 #else
-#define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1)))
+#define CTEST_IMPL_SECTION __attribute__ ((used, section (".ctest"), aligned(1), no_sanitize("address")))
 #endif
 
 #define CTEST_IMPL_STRUCT(sname, tname, tskip, tdata, tsetup, tteardown) \
@@ -512,9 +512,7 @@ static void sighandler(int signum)
 }
 #endif
 
-int ctest_main(int argc, const char *argv[]);
-
-__attribute__((no_sanitize_address)) int ctest_main(int argc, const char *argv[])
+int ctest_main(int argc, const char *argv[])
 {
     static int total = 0;
     static int num_ok = 0;
