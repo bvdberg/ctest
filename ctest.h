@@ -265,6 +265,7 @@ static char ctest_errorbuffer[MSG_SIZE];
 static jmp_buf ctest_err;
 static int color_output = 1;
 static const char* suite_name;
+static const char *test_name;
 
 typedef int (*ctest_filter_func)(struct ctest*);
 
@@ -481,6 +482,10 @@ static int suite_filter(struct ctest* t) {
     return strncmp(suite_name, t->ssname, strlen(suite_name)) == 0;
 }
 
+static int test_filter(struct ctest *t) {
+	return (suite_filter(t) == 1) && (strncmp(test_name, t->ttname, strlen(test_name)) == 0);
+}
+
 static void color_print(const char* color, const char* text) {
     if (color_output)
         printf("%s%s" ANSI_NORMAL "\n", color, text);
@@ -526,8 +531,48 @@ int ctest_main(int argc, const char *argv[])
 #endif
 
     if (argc == 2) {
-        suite_name = argv[1];
-        filter = suite_filter;
+        if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
+            printf("Usage: %s [SUITE[:TEST]|--list|--help]\n", argv[0]);
+            printf("  SUITE[:TEST]  Run only tests from the specified suite or test\n");
+            printf("  --list        List all available tests\n");
+            printf("  --help, -h    Show this help message\n");
+            return 0;
+        }
+
+        if (strcmp(argv[1], "--list") == 0) {
+            struct ctest* ctest_begin = &CTEST_IMPL_TNAME(suite, test);
+            struct ctest* ctest_end = &CTEST_IMPL_TNAME(suite, test);
+            // find begin and end of section by comparing magics
+            while (1) {
+                struct ctest* t = ctest_begin-1;
+                if (t->magic != CTEST_IMPL_MAGIC) break;
+                ctest_begin--;
+            }
+            while (1) {
+                struct ctest* t = ctest_end+1;
+                if (t->magic != CTEST_IMPL_MAGIC) break;
+                ctest_end++;
+            }
+            ctest_end++;    // end after last one
+
+            static struct ctest* test;
+            for (test = ctest_begin; test != ctest_end; test++) {
+                if (test == &CTEST_IMPL_TNAME(suite, test)) continue;
+                printf("%s:%s\n", test->ssname, test->ttname);
+            }
+            return 0;
+        }
+
+        char* sep = (char*)strchr(argv[1], ':');
+        if (sep) {
+			suite_name = argv[1];
+			test_name = sep + 1;
+            *sep = 0;
+			filter = test_filter;
+        } else {
+            suite_name = argv[1];
+            filter = suite_filter;
+        }
     }
 #ifdef CTEST_NO_COLORS
     color_output = 0;
